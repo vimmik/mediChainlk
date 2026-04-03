@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "MediChainLK",
+    "slug": "medichainlk-customer",
+    "version": "1.0.0",
+    "scheme": "medichainlk",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "lk.medichainlk.customer"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "lk.medichainlk.customer",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
+    ]
+  }
+}

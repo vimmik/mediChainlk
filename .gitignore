@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Prisma
+apps/api/prisma/*.db
+
+# Docker
+postgres_data/
+redis_data/
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+
+# Terraform
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate*
+infrastructure/terraform/.terraform.lock.hcl
+
+# Expo
+apps/customer-app/.expo/
+apps/customer-app/android/
+apps/customer-app/ios/
+
+# Firebase
+**/firebase-service-account.json
+**/serviceAccountKey.json
+
+# Logs
+*.log
+npm-debug.log*

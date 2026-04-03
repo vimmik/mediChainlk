@@ -1,0 +1,28 @@
+{
+  "name": "medichainlk-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "npm run prisma:generate --workspace=apps/api",
+    "db:migrate": "npm run prisma:migrate --workspace=apps/api",
+    "db:studio": "npm run prisma:studio --workspace=apps/api",
+    "create:admin-src": "node create-admin-src.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "prettier": "^3.4.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "npm@10.9.0"
+}

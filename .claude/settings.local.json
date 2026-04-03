@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(node node_modules/.bin/tsc --noEmit -p packages/shared-types/tsconfig.json)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

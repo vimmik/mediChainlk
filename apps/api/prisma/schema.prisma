@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         String     @id @default(cuid())
+  name       String
+  slug       String     @unique
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  pharmacies Pharmacy[]
+  users      User[]
+}
+
+model User {
+  id            String         @id @default(cuid())
+  firebaseUid   String         @unique
+  email         String?
+  phone         String?
+  firstName     String?
+  lastName      String?
+  role          String
+  tenantId      String?
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id])
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        Order[]
+  prescriptions Prescription[]
+}
+
+model Pharmacy {
+  id        String          @id @default(cuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  name      String
+  address   String
+  city      String
+  phone     String
+  licenseNo String
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  inventory InventoryItem[]
+  orders    Order[]
+}
+
+model Medicine {
+  id             String          @id @default(cuid())
+  genericName    String
+  brandName      String?
+  nmraCode       String?         @unique
+  form           String
+  strength       String?
+  unit           String
+  isControlled   Boolean         @default(false)
+  isHighAlert    Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
+}
+
+model InventoryItem {
+  id             String    @id @default(cuid())
+  tenantId       String
+  pharmacyId     String
+  pharmacy       Pharmacy  @relation(fields: [pharmacyId], references: [id])
+  medicineId     String
+  medicine       Medicine  @relation(fields: [medicineId], references: [id])
+  batchNo        String?
+  expiryDate     DateTime?
+  quantityOnHand Int       @default(0)
+  reorderLevel   Int       @default(10)
+  unitPrice      Decimal   @db.Decimal(10, 2)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Prescription {
+  id             String    @id @default(cuid())
+  tenantId       String
+  pharmacyId     String
+  customerId     String
+  customer       User      @relation(fields: [customerId], references: [id])
+  imageS3Key     String
+  status         String
+  ocrRawText     String?
+  ocrResult      Json?
+  confidenceTier String?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  order          Order?
+}
+
+model Order {
+  id                 String        @id @default(cuid())
+  tenantId           String
+  pharmacyId         String
+  pharmacy           Pharmacy      @relation(fields: [pharmacyId], references: [id])
+  customerId         String
+  customer           User          @relation(fields: [customerId], references: [id])
+  prescriptionId     String?       @unique
+  prescription       Prescription? @relation(fields: [prescriptionId], references: [id])
+  status             String
+  subtotal           Decimal       @db.Decimal(10, 2)
+  deliveryFee        Decimal       @db.Decimal(10, 2) @default(0)
+  total              Decimal       @db.Decimal(10, 2)
+  currency           String        @default("LKR")
+  deliveryAddress    Json?
+  deliveryProvider   String?
+  deliveryTrackingId String?
+  deliveryStatus     String?
+  paymentId          String?       @unique
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  items              OrderItem[]
+  payment            Payment?
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  tenantId     String
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id])
+  medicineId   String
+  medicineName String
+  quantity     Int
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  total        Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+}
+
+model Payment {
+  id                String    @id @default(cuid())
+  tenantId          String
+  orderId           String    @unique
+  order             Order     @relation(fields: [orderId], references: [id])
+  provider          String
+  providerOrderId   String?
+  providerPaymentId String?
+  amount            Decimal   @db.Decimal(10, 2)
+  currency          String    @default("LKR")
+  status            String
+  authorizedAt      DateTime?
+  capturedAt        DateTime?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}

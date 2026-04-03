@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "node16",
+    "moduleResolution": "node16",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "../..",
+    "paths": {
+      "@medichainlk/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@medichainlk/shared-utils": ["../../packages/shared-utils/src/index.ts"]
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test"]
+}
