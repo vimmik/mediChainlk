@@ -33,7 +33,7 @@ cd apps/ai-service && pytest tests/ -v    # Python tests
 
 Turborepo monorepo. Each app is independent; shared code lives in `packages/`.
 
-```
+```text
 apps/
   api/               # NestJS 11 — modular monolith, port 3001
   admin-portal/      # Next.js 15 — system admin, port 3002
@@ -116,6 +116,10 @@ Copy `.env.example` → `.env` for each app:
 - `apps/pharmacy-portal/.env.local` — same as admin
 - `apps/ai-service/.env` — GOOGLE_APPLICATION_CREDENTIALS, AWS S3, API_URL
 - `apps/customer-app/.env` — EXPO_PUBLIC_API_URL
+
+## TypeScript Configuration
+
+`apps/api/tsconfig.json` uses `"module": "node16", "moduleResolution": "node16"` (not `commonjs`) to avoid TS 7.0 deprecation warnings. Workspace package imports (`@medichainlk/*`) are resolved via `paths` pointing to source — no build step needed during development.
 
 ## Language Conventions
 

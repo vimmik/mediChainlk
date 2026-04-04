@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle } from '@medichainlk/ui';
 
 export default function LoginPage() {
@@ -18,6 +18,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
+      const auth = getFirebaseAuth();
+      if (!auth) {
+        setError('Firebase is not initialized. Please check your configuration.');
+        return;
+      }
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
     } catch {

@@ -1,14 +1,19 @@
 'use client';
 
 import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { Button, Avatar, AvatarFallback } from '@medichainlk/ui';
 
 export function TopBar() {
   const { user } = useAuthStore();
 
-  const handleSignOut = () => signOut(auth);
+  const handleSignOut = async () => {
+    const auth = getFirebaseAuth();
+    if (auth) {
+      await signOut(auth);
+    }
+  };
 
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-6">
