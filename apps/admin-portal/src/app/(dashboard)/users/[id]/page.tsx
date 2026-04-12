@@ -3,22 +3,27 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Badge, Skeleton } from '@medichainlk/ui';
+import { Button, Badge } from '@medichainlk/ui';
 import { useUser } from '@/hooks/useUsers';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';
+import { Pencil, MapPin, Building2, Star } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { DetailSkeleton } from '@/components/shared/TableSkeleton';
 
-const ROLE_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  system_admin:   { label: 'System Admin',   variant: 'default' },
-  pharmacy_admin: { label: 'Pharmacy Admin', variant: 'default' },
-  pharmacy_staff: { label: 'Pharmacy Staff', variant: 'outline' },
-  customer:       { label: 'Customer',       variant: 'secondary' },
+const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  system_admin:   { bg: 'bg-blue-500/10',   text: 'text-blue-600 dark:text-blue-400',   label: 'System Admin' },
+  pharmacy_admin: { bg: 'bg-violet-500/10',  text: 'text-violet-600 dark:text-violet-400', label: 'Pharmacy Admin' },
+  pharmacy_staff: { bg: 'bg-teal-500/10',    text: 'text-teal-600 dark:text-teal-400',   label: 'Pharmacy Staff' },
+  customer:       { bg: 'bg-slate-500/10',   text: 'text-slate-600 dark:text-slate-400', label: 'Customer' },
 };
 
 function Field({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div className="space-y-0.5">
-      <dt className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</dt>
-      <dd className="text-sm">{value ?? <span className="text-muted-foreground">—</span>}</dd>
+    <div className="space-y-1">
+      <dt className="text-[11px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">{label}</dt>
+      <dd className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+        {value ?? <span className="text-slate-300 dark:text-slate-600">—</span>}
+      </dd>
     </div>
   );
 }
@@ -29,51 +34,69 @@ export default function UserDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
-        </div>
-      </div>
-    );
+    return <DetailSkeleton sections={4} fieldsPerSection={6} />;
   }
 
   if (!user) {
     return (
-      <div className="text-center py-20 text-muted-foreground">
-        User not found.{' '}
-        <Link href="/users" className="underline">Back to users</Link>
+      <div className="section-glass text-center py-20">
+        <p className="text-slate-500 dark:text-slate-400">User not found.</p>
+        <Link href="/users" className="text-blue-500 hover:underline text-sm mt-2 inline-block">
+          Back to users
+        </Link>
       </div>
     );
   }
 
-  const roleCfg = ROLE_BADGE[user.role] ?? { label: user.role, variant: 'secondary' as const };
+  const roleCfg = ROLE_COLORS[user.role] ?? { bg: 'bg-slate-500/10', text: 'text-slate-500', label: user.role };
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User';
+  const initials = displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <>
       <div className="space-y-6 max-w-3xl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/users" className="text-muted-foreground hover:text-foreground text-sm">
-              ← Users
-            </Link>
-            <h2 className="text-2xl font-bold tracking-tight">
-              {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User'}
-            </h2>
-            <Badge variant={roleCfg.variant}>{roleCfg.label}</Badge>
-            <Badge variant={user.isActive ? 'default' : 'secondary'}>
-              {user.isActive ? 'Active' : 'Inactive'}
-            </Badge>
+        <PageHeader
+          title={displayName}
+          breadcrumbs={[{ label: 'Users', href: '/users' }, { label: displayName }]}
+          badge={
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${roleCfg.bg} ${roleCfg.text}`}>
+                {roleCfg.label}
+              </span>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                user.isActive
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-slate-500/10 text-slate-500 dark:text-slate-400'
+              }`}>
+                <span className={`status-dot ${user.isActive ? 'status-dot-active' : 'status-dot-inactive'}`} />
+                {user.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          }
+          action={
+            <Button variant="outline" onClick={() => setEditOpen(true)} className="gap-2 rounded-xl">
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Button>
+          }
+        />
+
+        {/* Avatar header */}
+        <div className="section-glass flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500/20 to-teal-500/20 flex items-center justify-center text-xl font-bold text-blue-600 dark:text-blue-400">
+            {initials}
           </div>
-          <Button onClick={() => setEditOpen(true)}>Edit</Button>
+          <div>
+            <div className="text-lg font-semibold text-slate-800 dark:text-slate-200">{displayName}</div>
+            <div className="text-sm text-slate-400 dark:text-slate-500">{user.email}</div>
+            {user.phone && <div className="text-sm text-slate-400 dark:text-slate-500">{user.phone}</div>}
+          </div>
         </div>
 
-        {/* Profile sections */}
-        <div className="rounded-lg border p-5 space-y-5">
-          <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Personal Information</h3>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Personal Information */}
+        <div className="section-glass space-y-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Personal Information</h3>
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             <Field label="First name" value={user.firstName} />
             <Field label="Last name" value={user.lastName} />
             <Field label="Email" value={user.email} />
@@ -86,9 +109,13 @@ export default function UserDetailPage() {
           </dl>
         </div>
 
-        <div className="rounded-lg border p-5 space-y-5">
-          <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Address</h3>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Address */}
+        <div className="section-glass space-y-5">
+          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <MapPin className="w-3.5 h-3.5" />
+            Address
+          </h3>
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             <Field label="Address line 1" value={user.addressLine1} />
             <Field label="Address line 2" value={user.addressLine2} />
             <Field label="Address line 3" value={user.addressLine3} />
@@ -97,9 +124,10 @@ export default function UserDetailPage() {
           </dl>
         </div>
 
-        <div className="rounded-lg border p-5 space-y-5">
-          <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Account</h3>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Account */}
+        <div className="section-glass space-y-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Account</h3>
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
             <Field label="Role" value={roleCfg.label} />
             <Field label="Tenant" value={(user as { tenant?: { name?: string } }).tenant?.name} />
             <Field label="Firebase UID" value={user.firebaseUid} />
@@ -108,16 +136,30 @@ export default function UserDetailPage() {
           </dl>
         </div>
 
+        {/* Branch Assignments */}
         {(user as { branchAssignments?: { id: string; isPrimary: boolean; branch: { id: string; name: string; city: string } }[] }).branchAssignments?.length ? (
-          <div className="rounded-lg border p-5 space-y-3">
-            <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Branch Assignments</h3>
+          <div className="section-glass space-y-4">
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <Building2 className="w-3.5 h-3.5" />
+              Branch Assignments
+            </h3>
             <div className="space-y-2">
               {(user as { branchAssignments: { id: string; isPrimary: boolean; branch: { id: string; name: string; city: string } }[] }).branchAssignments.map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <span className="font-medium">{a.branch.name}</span>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{a.branch.city}</span>
-                    {a.isPrimary && <Badge variant="secondary">Primary</Badge>}
+                <div key={a.id} className="flex items-center justify-between rounded-xl bg-white/5 dark:bg-white/[0.03] border border-white/10 dark:border-white/5 px-4 py-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-500/10 to-blue-500/10 flex items-center justify-center">
+                      <Building2 className="w-3.5 h-3.5 text-violet-500/70" />
+                    </div>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{a.branch.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{a.branch.city}</span>
+                    {a.isPrimary && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+                        <Star className="w-2.5 h-2.5" />
+                        Primary
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

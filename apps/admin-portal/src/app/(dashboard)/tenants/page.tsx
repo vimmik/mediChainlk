@@ -6,9 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  Badge,
   Button,
-  Skeleton,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -23,6 +21,11 @@ import {
   useReactivateTenant,
   type Tenant,
 } from '@/hooks/useTenants';
+import { Building2, Plus, Settings, MapPin, Users, Calendar, Power, PowerOff } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { TableSkeleton } from '@/components/shared/TableSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { TopProgressBar } from '@/components/shared/TopProgressBar';
 
 const createSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -60,16 +63,17 @@ function CreateTenantModal({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md glass-card border-white/20 dark:border-white/10">
         <DialogHeader>
-          <DialogTitle>Create Pharmacy Tenant</DialogTitle>
+          <DialogTitle className="text-slate-800 dark:text-white">Create Pharmacy Tenant</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1">
-            <Label htmlFor="name">Pharmacy Brand Name</Label>
+            <Label htmlFor="name" className="text-slate-600 dark:text-slate-300">Pharmacy Brand Name</Label>
             <Input
               id="name"
               placeholder="e.g. ABC Pharmacy"
+              className="glass-input"
               {...register('name', {
                 onChange: (e) => setValue('slug', autoSlug(e.target.value)),
               })}
@@ -78,22 +82,22 @@ function CreateTenantModal({ open, onClose }: { open: boolean; onClose: () => vo
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="slug">Slug</Label>
+            <Label htmlFor="slug" className="text-slate-600 dark:text-slate-300">Slug</Label>
             <Input
               id="slug"
               placeholder="abc-pharmacy"
               {...register('slug')}
-              className="font-mono text-sm"
+              className="glass-input font-mono text-sm"
             />
             {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
-            <p className="text-xs text-muted-foreground">Auto-generated from name. Used in URLs.</p>
+            <p className="text-xs text-slate-400">Auto-generated from name. Used in URLs.</p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }}>
+            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }} className="rounded-xl">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="rounded-xl glow-blue">
               {isSubmitting ? 'Creating…' : 'Create'}
             </Button>
           </div>
@@ -108,48 +112,72 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
   const reactivate = useReactivateTenant();
 
   return (
-    <tr className="hover:bg-muted/30 transition-colors">
-      <td className="px-4 py-3">
-        <div className="font-medium">{tenant.name}</div>
-        <div className="text-xs text-muted-foreground font-mono">{tenant.slug}</div>
+    <tr>
+      <td>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center text-sm font-bold text-violet-600 dark:text-violet-400">
+            {tenant.name[0]?.toUpperCase() ?? 'T'}
+          </div>
+          <div>
+            <div className="font-medium text-slate-800 dark:text-slate-200">{tenant.name}</div>
+            <div className="text-xs text-slate-400 font-mono">/{tenant.slug}</div>
+          </div>
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {tenant._count?.branches ?? 0} branches
+      <td className="text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5" />
+          {tenant._count?.branches ?? 0}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {tenant._count?.users ?? 0} admins
+      <td className="text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5" />
+          {tenant._count?.users ?? 0}
+        </div>
       </td>
-      <td className="px-4 py-3">
-        <Badge variant={tenant.isActive ? 'default' : 'secondary'}>
-          {tenant.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+      <td>
+        <div className="flex items-center gap-2">
+          <span className={`status-dot ${tenant.isActive ? 'status-dot-active' : 'status-dot-inactive'}`} />
+          <span className={`text-xs font-medium ${tenant.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+            {tenant.isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {new Date(tenant.createdAt).toLocaleDateString()}
+      <td className="text-slate-400 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5" />
+          {new Date(tenant.createdAt).toLocaleDateString()}
+        </div>
       </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2 justify-end">
+      <td>
+        <div className="flex items-center gap-1 justify-end">
           <Link href={`/tenants/${tenant.id}`}>
-            <Button variant="outline" size="sm">Manage</Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-blue-500/10" title="Manage">
+              <Settings className="w-3.5 h-3.5" />
+            </Button>
           </Link>
           {tenant.isActive ? (
             <Button
               variant="ghost"
               size="sm"
-              className="text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 rounded-lg text-destructive hover:bg-red-500/10 hover:text-destructive"
               onClick={() => deactivate.mutate(tenant.id)}
               disabled={deactivate.isPending}
+              title="Deactivate"
             >
-              Deactivate
+              <PowerOff className="w-3.5 h-3.5" />
             </Button>
           ) : (
             <Button
               variant="ghost"
               size="sm"
+              className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-500/10"
               onClick={() => reactivate.mutate(tenant.id)}
               disabled={reactivate.isPending}
+              title="Reactivate"
             >
-              Reactivate
+              <Power className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>
@@ -159,50 +187,55 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
 }
 
 export default function TenantsPage() {
-  const { data: tenants, isLoading } = useTenants();
+  const { data: tenants, isLoading, isFetching } = useTenants();
   const [createOpen, setCreateOpen] = useState(false);
+  const tenantList = tenants ?? [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Pharmacy Tenants</h2>
-          <p className="text-muted-foreground">
-            Manage pharmacy brands and their branch locations
-          </p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)}>+ New Tenant</Button>
-      </div>
+      <TopProgressBar loading={isFetching && !isLoading} />
+
+      <PageHeader
+        title="Pharmacy Tenants"
+        description={`${tenantList.length > 0 ? `${tenantList.length} registered pharmacies` : 'Manage pharmacy brands and their branch locations'}`}
+        action={
+          <Button onClick={() => setCreateOpen(true)} className="gap-2 glow-blue rounded-xl">
+            <Plus className="w-4 h-4" />
+            New Tenant
+          </Button>
+        }
+      />
 
       {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
+        <TableSkeleton rows={5} cols={6} />
+      ) : tenantList.length === 0 ? (
+        <div className="glass-table">
+          <EmptyState
+            icon={Building2}
+            title="No tenants yet"
+            description="Create your first pharmacy tenant to get started"
+            action={
+              <Button onClick={() => setCreateOpen(true)} className="gap-2 rounded-xl">
+                <Plus className="w-4 h-4" /> Create Tenant
+              </Button>
+            }
+          />
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="glass-table">
           <table className="w-full text-sm">
-            <thead className="bg-muted/50">
+            <thead>
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pharmacy</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Branches</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Admins</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Created</th>
-                <th className="px-4 py-3" />
+                <th className="text-left">Pharmacy</th>
+                <th className="text-left">Branches</th>
+                <th className="text-left">Admins</th>
+                <th className="text-left">Status</th>
+                <th className="text-left">Created</th>
+                <th />
               </tr>
             </thead>
-            <tbody className="divide-y">
-              {(tenants ?? []).length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                    No tenants yet. Create your first pharmacy tenant.
-                  </td>
-                </tr>
-              ) : (
-                (tenants ?? []).map((t) => <TenantRow key={t.id} tenant={t} />)
-              )}
+            <tbody>
+              {tenantList.map((t) => <TenantRow key={t.id} tenant={t} />)}
             </tbody>
           </table>
         </div>

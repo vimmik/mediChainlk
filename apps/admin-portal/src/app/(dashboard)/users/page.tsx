@@ -2,18 +2,30 @@
 
 import { useState, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
-import { Button, Badge, Skeleton } from '@medichainlk/ui';
+import { Button, Badge } from '@medichainlk/ui';
 import { useUsers, type User } from '@/hooks/useUsers';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';
 import { useDeactivateUser, useReactivateUser } from '@/hooks/useUsers';
 import Link from 'next/link';
+import { Search, UserPlus, ChevronLeft, ChevronRight, Eye, Pencil, UserX, UserCheck, Users } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { TableSkeleton } from '@/components/shared/TableSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { TopProgressBar } from '@/components/shared/TopProgressBar';
 
 const ROLE_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   system_admin:    { label: 'System Admin',    variant: 'default' },
   pharmacy_admin:  { label: 'Pharmacy Admin',  variant: 'default' },
   pharmacy_staff:  { label: 'Pharmacy Staff',  variant: 'outline' },
   customer:        { label: 'Customer',        variant: 'secondary' },
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  system_admin:    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+  pharmacy_admin:  'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20',
+  pharmacy_staff:  'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20',
+  customer:        'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
 };
 
 export default function UsersPage() {
@@ -25,7 +37,7 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useUsers({
+  const { data, isLoading, isFetching } = useUsers({
     search: debouncedSearch || undefined,
     role: roleFilter || undefined,
     isActive: statusFilter,
@@ -44,28 +56,39 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      <TopProgressBar loading={isFetching && !isLoading} />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Users</h2>
-          <p className="text-muted-foreground">Manage all platform users</p>
-        </div>
-        <Button onClick={() => setInviteOpen(true)}>+ Invite User</Button>
-      </div>
+      <PageHeader
+        title="Users"
+        description={`${total > 0 ? `${total} total users` : 'Manage all platform users'}`}
+        action={
+          <Button
+            onClick={() => setInviteOpen(true)}
+            className="gap-2 glow-blue rounded-xl"
+          >
+            <UserPlus className="w-4 h-4" />
+            Invite User
+          </Button>
+        }
+      />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <input
-          type="search"
-          placeholder="Search name or email…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); handleFilterChange(); }}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      <div className="glass-filter-bar flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="search"
+            placeholder="Search name or email…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); handleFilterChange(); }}
+            className="glass-input w-full pl-9"
+          />
+        </div>
         <select
           value={roleFilter}
           onChange={(e) => { setRoleFilter(e.target.value); handleFilterChange(); }}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="glass-select"
         >
           <option value="">All roles</option>
           <option value="system_admin">System Admin</option>
@@ -79,7 +102,7 @@ export default function UsersPage() {
             setStatusFilter(e.target.value === '' ? undefined : e.target.value === 'true');
             handleFilterChange();
           }}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="glass-select"
         >
           <option value="">All statuses</option>
           <option value="true">Active</option>
@@ -88,122 +111,151 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Phone</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Tenant</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {isLoading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <Skeleton className="h-4 w-full" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              : users.length === 0
-              ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
-                      No users found.
+      {isLoading ? (
+        <TableSkeleton rows={8} cols={7} />
+      ) : users.length === 0 ? (
+        <div className="glass-table">
+          <EmptyState
+            icon={Users}
+            title="No users found"
+            description="Try adjusting your search or filter criteria"
+          />
+        </div>
+      ) : (
+        <div className="glass-table">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="text-left">Name</th>
+                <th className="text-left">Email</th>
+                <th className="text-left hidden md:table-cell">Phone</th>
+                <th className="text-left">Role</th>
+                <th className="text-left hidden lg:table-cell">Tenant</th>
+                <th className="text-left">Status</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => {
+                const roleCfg = ROLE_BADGE[u.role] ?? { label: u.role, variant: 'secondary' as const };
+                const roleColor = ROLE_COLORS[u.role] ?? ROLE_COLORS.customer;
+                return (
+                  <tr key={u.id}>
+                    <td className="font-medium text-slate-800 dark:text-slate-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-linear-to-br from-blue-500/20 to-teal-500/20 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400">
+                          {(u.firstName?.[0] || u.email?.[0] || '?').toUpperCase()}
+                        </div>
+                        <span>{[u.firstName, u.lastName].filter(Boolean).join(' ') || '—'}</span>
+                      </div>
                     </td>
-                  </tr>
-                )
-              : users.map((u) => {
-                  const roleCfg = ROLE_BADGE[u.role] ?? { label: u.role, variant: 'secondary' as const };
-                  return (
-                    <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium">
-                        {[u.firstName, u.lastName].filter(Boolean).join(' ') || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.email ?? '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{u.phone ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={roleCfg.variant}>{roleCfg.label}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
-                        {u.tenant?.name ?? '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={u.isActive ? 'default' : 'secondary'}>
+                    <td className="text-slate-500 dark:text-slate-400">{u.email ?? '—'}</td>
+                    <td className="text-slate-500 dark:text-slate-400 hidden md:table-cell">{u.phone ?? '—'}</td>
+                    <td>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${roleColor}`}>
+                        {roleCfg.label}
+                      </span>
+                    </td>
+                    <td className="text-slate-500 dark:text-slate-400 hidden lg:table-cell">
+                      {u.tenant?.name ?? '—'}
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <span className={`status-dot ${u.isActive ? 'status-dot-active' : 'status-dot-inactive'}`} />
+                        <span className={`text-xs font-medium ${u.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                           {u.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 rounded-lg hover:bg-blue-500/10"
+                          onClick={() => setEditUser(u)}
+                          title="Edit user"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        {u.isActive ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setEditUser(u)}
+                            className="h-8 w-8 p-0 rounded-lg text-destructive hover:bg-red-500/10 hover:text-destructive"
+                            onClick={() => deactivate.mutate(u.id)}
+                            disabled={deactivate.isPending}
+                            title="Deactivate"
                           >
-                            Edit
+                            <UserX className="w-3.5 h-3.5" />
                           </Button>
-                          {u.isActive ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => deactivate.mutate(u.id)}
-                              disabled={deactivate.isPending}
-                            >
-                              Deactivate
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => reactivate.mutate(u.id)}
-                              disabled={reactivate.isPending}
-                            >
-                              Reactivate
-                            </Button>
-                          )}
-                          <Link href={`/users/${u.id}`}>
-                            <Button variant="ghost" size="sm">View</Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-          </tbody>
-        </table>
-      </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-lg hover:bg-emerald-500/10"
+                            onClick={() => reactivate.mutate(u.id)}
+                            disabled={reactivate.isPending}
+                            title="Reactivate"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Link href={`/users/${u.id}`}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-blue-500/10" title="View details">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, total)} of {total}
+        <div className="glass-filter-bar flex items-center justify-between text-sm">
+          <span className="text-slate-500 dark:text-slate-400">
+            Showing <span className="font-medium text-slate-700 dark:text-slate-200">{(page - 1) * 20 + 1}–{Math.min(page * 20, total)}</span> of{' '}
+            <span className="font-medium text-slate-700 dark:text-slate-200">{total}</span>
           </span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              className="h-8 w-8 p-0 rounded-lg"
               onClick={() => setPage((p) => p - 1)}
               disabled={page <= 1}
             >
-              ← Prev
+              <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="px-2 py-1">Page {page} of {totalPages}</span>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const pageNum = i + 1;
+              return (
+                <Button
+                  key={pageNum}
+                  variant={page === pageNum ? 'default' : 'ghost'}
+                  size="sm"
+                  className={`h-8 w-8 p-0 rounded-lg text-xs ${page === pageNum ? 'glow-ring' : ''}`}
+                  onClick={() => setPage(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+            {totalPages > 5 && <span className="px-1 text-slate-400">…</span>}
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              className="h-8 w-8 p-0 rounded-lg"
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
             >
-              Next →
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>

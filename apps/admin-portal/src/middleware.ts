@@ -48,16 +48,18 @@ export async function middleware(request: NextRequest) {
   // HTML navigation path — do the full check
   const session = cookie ? await fetchSession(cookie) : null;
 
-  // If backend session lookup is temporarily unavailable, or if a cookie is
-  // present but Redis no longer has the session, avoid hard-logging out the
-  // user on refresh. The client auth bootstrap can re-establish the session.
-  if (cookie && (session === 'UNAVAILABLE' || session === null)) {
-    return NextResponse.next();
+  // Locked account: clean up and kick to login with a reason.
+  // Check this before the "soft pass-through" so locked users can't bypass.
+  if (session && typeof session === 'object' && session.locked) {
+    return redirectToLogin(request, pathname, 'locked', true);
   }
 
-  // Locked account: clean up and kick to login with a reason
-  if (session?.locked) {
-    return redirectToLogin(request, pathname, 'locked', true);
+  // If backend session lookup is temporarily unavailable, Redis session expired
+  // (authenticated: false), or session not found — but a cookie is present,
+  // let the request through. The client-side AuthBootstrap will detect that
+  // Firebase is still signed in and transparently re-create the server session.
+  if (cookie && (session === 'UNAVAILABLE' || session === null || !session?.authenticated)) {
+    return NextResponse.next();
   }
 
   // Authenticated user visiting a public auth page → send them home.
