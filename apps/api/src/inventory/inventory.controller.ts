@@ -15,25 +15,25 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Get()
-  @Roles('pharmacy_staff', 'pharmacy_owner')
-  findAll(@CurrentTenant() tenantId: string, @Query('pharmacyId') pharmacyId: string) {
-    return this.inventoryService.findByPharmacy(tenantId, pharmacyId);
+  @Roles('pharmacy_staff', 'pharmacy_admin')
+  findAll(@CurrentTenant() tenantId: string, @Query('branchId') branchId: string) {
+    return this.inventoryService.findByBranch(tenantId, branchId);
   }
 
   @Get('low-stock')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
-  getLowStock(@CurrentTenant() tenantId: string, @Query('pharmacyId') pharmacyId: string) {
-    return this.inventoryService.getLowStockAlerts(tenantId, pharmacyId);
+  @Roles('pharmacy_staff', 'pharmacy_admin')
+  getLowStock(@CurrentTenant() tenantId: string, @Query('branchId') branchId: string) {
+    return this.inventoryService.getLowStockAlerts(tenantId, branchId);
   }
 
   @Post()
-  @Roles('pharmacy_staff', 'pharmacy_owner')
+  @Roles('pharmacy_staff', 'pharmacy_admin')
   upsert(@Body() dto: UpsertInventoryDto, @CurrentTenant() tenantId: string) {
     return this.inventoryService.upsert(dto, tenantId);
   }
 
   @Patch(':id/adjust')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
+  @Roles('pharmacy_staff', 'pharmacy_admin')
   adjustQuantity(@Param('id') id: string, @Body('quantity') quantity: number) {
     return this.inventoryService.adjustQuantity(id, quantity);
   }

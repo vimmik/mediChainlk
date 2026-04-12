@@ -50,7 +50,7 @@ export class PaymentService {
       // Payment successful
       await this.prisma.payment.update({
         where: { orderId },
-        data: { status: 'CAPTURED', capturedAt: new Date(), metadata: body },
+        data: { status: 'CAPTURED', capturedAt: new Date(), metadata: body as Record<string, string> },
       });
     }
 

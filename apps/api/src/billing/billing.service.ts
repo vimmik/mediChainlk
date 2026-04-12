@@ -14,7 +14,7 @@ export class BillingService {
     return this.prisma.order.create({
       data: {
         tenantId,
-        pharmacyId: dto.pharmacyId,
+        branchId: dto.branchId,
         customerId: dto.customerId,
         prescriptionId: dto.prescriptionId,
         status: 'PENDING_PAYMENT',

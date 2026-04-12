@@ -16,7 +16,7 @@ export class PrescriptionService {
     const prescription = await this.prisma.prescription.create({
       data: {
         tenantId: dto.tenantId,
-        pharmacyId: dto.pharmacyId,
+        branchId: dto.branchId,
         customerId,
         imageS3Key: dto.imageS3Key,
         status: 'UPLOADED',
@@ -60,11 +60,11 @@ export class PrescriptionService {
     return response.data;
   }
 
-  async getPendingReviewQueue(tenantId: string, pharmacyId: string) {
+  async getPendingReviewQueue(tenantId: string, branchId: string) {
     return this.prisma.prescription.findMany({
       where: {
         tenantId,
-        pharmacyId,
+        branchId,
         status: { in: ['PENDING_REVIEW', 'PHARMACIST_REVIEWING'] },
       },
       include: { customer: true },

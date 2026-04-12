@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_cDEVt7mSr4eG@ep-solitary-flower-a1sacgh0.ap-southeast-1.aws.neon.tech/medichainlk-dev?sslmode=require\" npx prisma migrate dev --name init_schema)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_cDEVt7mSr4eG@ep-solitary-flower-a1sacgh0.ap-southeast-1.aws.neon.tech/medichainlk-dev?sslmode=require\" npx prisma db push)",
+      "Bash(npx ts-node:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_cDEVt7mSr4eG@ep-solitary-flower-a1sacgh0.ap-southeast-1.aws.neon.tech/medichainlk-dev?sslmode=require\" npx prisma db push --force-reset)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"I confirm resetting the development database\" DATABASE_URL=\"postgresql://neondb_owner:npg_cDEVt7mSr4eG@ep-solitary-flower-a1sacgh0.ap-southeast-1.aws.neon.tech/medichainlk-dev?sslmode=require\" npx prisma db push --force-reset)",
+      "Bash(npx next:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker compose:*)",
+      "Bash(where docker:*)",
+      "Bash(winget list:*)",
+      "Bash(powershell.exe -Command \"Get-Command docker -ErrorAction SilentlyContinue; docker version 2>&1 | head -3\")",
+      "Bash(powershell.exe -Command \"Test-NetConnection localhost -Port 6379 -InformationLevel Quiet 2>&1\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node -e ':*)",
+      "Bash(npm list:*)",
+      "Bash(taskkill //F //IM node.exe //T)",
+      "Bash(curl -s http://localhost:3001/health)"
+    ],
+    "additionalDirectories": [
+      "e:\\Projects\\mediChainlk\\apps\\admin-portal\\src\\app\\(dashboard)\\users",
+      "e:\\Projects\\mediChainlk\\apps\\admin-portal\\src\\app\\(dashboard)\\tenants\\[id]\\branches"
+    ]
+  }
+}
