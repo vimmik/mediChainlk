@@ -102,7 +102,6 @@ export default function AiPipelinePage() {
     setPipelineRunning(true);
 
     let idx = 0;
-    let elapsed = 0;
 
     const advance = () => {
       if (idx >= STEPS.length) {
@@ -113,7 +112,6 @@ export default function AiPipelinePage() {
       setActiveIdx(idx);
       setPipelineStep(idx);
       const delay = STEPS[idx].duration;
-      elapsed += delay;
       idx++;
       setTimeout(advance, delay);
     };
@@ -233,7 +231,7 @@ export default function AiPipelinePage() {
             }`}>
               {activeIdx >= 0 ? (
                 <>
-                  <p className="text-slate-400">// raw OCR output</p>
+                  <p className="text-slate-400">{'// raw OCR output'}</p>
                   <p>Dr. Sunil Perera MBBS</p>
                   <p>Reg: LK-DOC-8821</p>
                   <p className="text-yellow-300 mt-1">Rx:</p>

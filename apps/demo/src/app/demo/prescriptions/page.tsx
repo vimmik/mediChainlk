@@ -9,7 +9,7 @@ import { CheckCircle, ChevronRight, FileText, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 export default function PrescriptionsPage() {
-  const { reviewedRx, reviewPrescription, getPrescriptionStatus } = useDemoStore();
+  const { reviewPrescription, getPrescriptionStatus } = useDemoStore();
   const hasHydrated = useHasHydrated();
   const [selected, setSelected] = useState<string | null>(null);
   const [notes, setNotes] = useState('');

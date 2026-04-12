@@ -4,7 +4,7 @@ import { PHARMACIES } from '@/lib/mock-data';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/lib/utils';
-import { Building2, MapPin, Hash, TrendingUp, ShoppingCart } from 'lucide-react';
+import { Building2, MapPin, Hash } from 'lucide-react';
 
 export default function PharmaciesPage() {
   return (
