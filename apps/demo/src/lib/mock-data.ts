@@ -179,7 +179,7 @@ export const MEDICINES = [
   { id: 'med018', code: 'PANTO40',   name: 'Pantoprazole 40mg',        categoryId: 'mcat6',  companyId: 'mc1', unitId: 'mu1', isHighAlert: false },
 ];
 
-// ─── Bins (Storage Locations) ──────────────────────────────────────────────
+// ─── Bins (Storage Locations) ────────────────────────────────────────────────
 export const BINS = [
   { id: 'bin1', code: 'A-01', name: 'Shelf A - Row 1',      section: 'General',       pharmacyId: 'ph1' },
   { id: 'bin2', code: 'A-02', name: 'Shelf A - Row 2',      section: 'General',       pharmacyId: 'ph1' },
