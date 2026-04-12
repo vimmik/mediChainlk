@@ -1,7 +1,7 @@
 'use client';
 
 import { ORDERS } from '@/lib/mock-data';
-import { useDemoStore } from '@/store/demo-store';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/lib/utils';
@@ -9,6 +9,9 @@ import { ShoppingCart, Truck, ChevronRight } from 'lucide-react';
 
 export default function OrdersPage() {
   const { advanceOrderStatus, getOrderStatus } = useDemoStore();
+  const hasHydrated = useHasHydrated();
+
+  const statusOf = (id: string) => hasHydrated ? getOrderStatus(id) : (ORDERS.find(o => o.id === id)?.status ?? 'PENDING');
 
   return (
     <div className="space-y-6">
@@ -20,8 +23,8 @@ export default function OrdersPage() {
       <div className="grid grid-cols-3 gap-4 mb-2">
         {[
           { label: 'Total Orders', value: ORDERS.length, color: 'text-slate-900' },
-          { label: 'In Progress',  value: ORDERS.filter(o => !['DELIVERED', 'CANCELLED'].includes(getOrderStatus(o.id))).length, color: 'text-blue-600' },
-          { label: 'Delivered',    value: ORDERS.filter(o => getOrderStatus(o.id) === 'DELIVERED').length, color: 'text-green-600' },
+          { label: 'In Progress',  value: ORDERS.filter(o => !['DELIVERED', 'CANCELLED'].includes(statusOf(o.id))).length, color: 'text-blue-600' },
+          { label: 'Delivered',    value: ORDERS.filter(o => statusOf(o.id) === 'DELIVERED').length, color: 'text-green-600' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -45,7 +48,7 @@ export default function OrdersPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {ORDERS.map((order) => {
-              const status = getOrderStatus(order.id);
+              const status = statusOf(order.id);
               const isDone = status === 'DELIVERED';
               return (
                 <tr key={order.id} className={`hover:bg-slate-50 transition-colors ${isDone ? 'opacity-60' : ''}`}>

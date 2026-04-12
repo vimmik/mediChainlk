@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useDemoStore } from '@/store/demo-store';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
 import { DELIVERY_QUOTES, ORDERS, PRESCRIPTIONS } from '@/lib/mock-data';
@@ -31,6 +31,7 @@ type Tab = 'upload' | 'track' | 'history';
 
 export default function CustomerPage() {
   const { getOrderStatus, advanceOrderStatus } = useDemoStore();
+  const hasHydrated = useHasHydrated();
   const [tab, setTab] = useState<Tab>('upload');
   const [uploadStep, setUploadStep] = useState<'idle' | 'preview' | 'processing' | 'done'>('idle');
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
@@ -46,8 +47,9 @@ export default function CustomerPage() {
   };
 
   const trackOrder = MY_ORDERS.find(o => o.id === trackOrderId)!;
-  const currentStatus = getOrderStatus(trackOrder.id);
+  const currentStatus = hasHydrated ? getOrderStatus(trackOrder.id) : (trackOrder.status ?? 'PRESCRIPTION_CONFIRMED');
   const currentStepIdx = ORDER_STEPS.indexOf(currentStatus);
+  const statusOf = (id: string) => hasHydrated ? getOrderStatus(id) : (ORDERS.find(o => o.id === id)?.status ?? 'PENDING');
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'upload', label: 'Upload Rx' },
@@ -344,7 +346,7 @@ export default function CustomerPage() {
               <div className="p-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Past Orders</p>
                 {ORDERS.map(o => {
-                  const status = getOrderStatus(o.id);
+                  const status = statusOf(o.id);
                   return (
                     <div key={o.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-2">

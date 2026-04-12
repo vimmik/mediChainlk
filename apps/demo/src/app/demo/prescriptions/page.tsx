@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PRESCRIPTIONS } from '@/lib/mock-data';
-import { useDemoStore } from '@/store/demo-store';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ConfidenceBadge, StatusBadge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
@@ -10,12 +10,14 @@ import { FileText, CheckCircle, XCircle, Clock, ChevronRight } from 'lucide-reac
 
 export default function PrescriptionsPage() {
   const { reviewedRx, reviewPrescription, getPrescriptionStatus } = useDemoStore();
+  const hasHydrated = useHasHydrated();
   const [selected, setSelected] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
 
+  const rxStatusOf = (id: string) => hasHydrated ? getPrescriptionStatus(id) : (PRESCRIPTIONS.find(r => r.id === id)?.status ?? 'PENDING_REVIEW');
+  const pending = PRESCRIPTIONS.filter(r => rxStatusOf(r.id) === 'PENDING_REVIEW');
+  const done    = PRESCRIPTIONS.filter(r => rxStatusOf(r.id) !== 'PENDING_REVIEW');
   const rx = PRESCRIPTIONS.find(r => r.id === selected);
-  const pending = PRESCRIPTIONS.filter(r => getPrescriptionStatus(r.id) === 'PENDING_REVIEW');
-  const done    = PRESCRIPTIONS.filter(r => getPrescriptionStatus(r.id) !== 'PENDING_REVIEW');
 
   return (
     <div className="flex gap-6 h-full">
@@ -49,7 +51,7 @@ export default function PrescriptionsPage() {
           <>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">Reviewed Today</p>
             {done.map((r) => {
-              const status = getPrescriptionStatus(r.id);
+              const status = rxStatusOf(r.id);
               return (
                 <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4 opacity-70">
                   <div className="flex items-center justify-between">
