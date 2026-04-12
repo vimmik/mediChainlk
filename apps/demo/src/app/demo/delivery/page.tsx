@@ -88,7 +88,8 @@ export default function DeliveryPage() {
       <div>
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Completed Deliveries</h2>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[840px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
@@ -118,6 +119,7 @@ export default function DeliveryPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

@@ -53,7 +53,7 @@ export default function UsersPage() {
       </div>
 
       {/* Filter */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         {['all', 'system_admin', 'pharmacy_owner', 'pharmacy_staff', 'customer'].map((r) => (
           <button
             key={r}
@@ -66,7 +66,8 @@ export default function UsersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[980px]">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
@@ -182,6 +183,7 @@ export default function UsersPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

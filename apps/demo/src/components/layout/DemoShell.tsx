@@ -12,6 +12,7 @@ import {
     FileText,
     LayoutDashboard,
     MapPin,
+    Menu,
     Moon,
     Package,
     Pill,
@@ -23,6 +24,7 @@ import {
     Sun,
     Truck,
     Users,
+    X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -63,6 +65,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
   const { activeRole, setRole, theme, setTheme, notificationsRead, setNotificationsRead } = useDemoStore();
   const cfg = ROLE_CONFIG[activeRole];
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const pendingRx = PRESCRIPTIONS.filter((rx) => rx.status === 'PENDING_REVIEW').length;
@@ -83,13 +86,17 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
   const unreadCount = notificationsRead ? 0 : NOTIFICATIONS.length;
 
   return (
     <div className={cn('flex h-screen overflow-hidden', isDark ? 'bg-[#0d1523]' : 'bg-slate-100')}>
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside
-        className="w-[220px] flex flex-col flex-shrink-0 text-white border-r"
+        className="hidden lg:flex w-[220px] flex-col flex-shrink-0 text-white border-r"
         style={{
           backgroundColor: 'var(--sidebar)',
           borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.18)',
@@ -218,6 +225,98 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {mobileNavOpen && (
+        <>
+          <div
+            className="lg:hidden fixed inset-0 z-40 bg-black/40"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside
+            className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-72 max-w-[84vw] flex flex-col text-white border-r"
+            style={{
+              backgroundColor: 'var(--sidebar)',
+              borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.18)',
+            }}
+          >
+            <div className="px-4 py-4 border-b flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-base flex-shrink-0 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)' }}
+                >
+                  M
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[13px] tracking-tight text-white leading-tight">MediChainLK</div>
+                  <div className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">Pharmacy Platform</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileNavOpen(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10"
+                aria-label="Close menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-3 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-widest font-semibold px-1">View as</p>
+              <div className="space-y-0.5">
+                {(['system_admin', 'pharmacy_staff', 'customer'] as Role[]).map((role) => {
+                  const isActive = activeRole === role;
+                  return (
+                    <button
+                      key={role}
+                      onClick={() => setRole(role)}
+                      className={cn(
+                        'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
+                        isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/10',
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', ROLE_CONFIG[role].dot)} />
+                        {ROLE_CONFIG[role].label}
+                      </div>
+                      {isActive && <ChevronRight className="w-3 h-3 opacity-70" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+              {visibleNav.map(({ href, label, icon: Icon }) => {
+                const isActive = pathname === href || pathname.startsWith(href + '/');
+                const isPrescriptions = href === '/demo/prescriptions';
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      'relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150',
+                      isActive ? 'text-white' : 'text-slate-400 hover:text-white hover:bg-white/10',
+                    )}
+                    style={isActive ? {
+                      background: 'linear-gradient(90deg, rgba(37,99,235,0.9) 0%, rgba(37,99,235,0.6) 100%)',
+                      boxShadow: '0 2px 8px rgba(37,99,235,0.35)',
+                    } : {}}
+                  >
+                    <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-white' : 'text-slate-500')} />
+                    <span className="flex-1 truncate">{label}</span>
+                    {isPrescriptions && pendingRx > 0 && (
+                      <span className={cn('text-[10px] font-bold', isActive ? 'text-amber-200' : 'text-amber-400')}>
+                        {pendingRx}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        </>
+      )}
+
       {/* ── Main ────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
@@ -233,6 +332,17 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
         >
           {/* Left: role + context */}
           <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className={cn(
+                'lg:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                isDark ? 'text-slate-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+              )}
+              style={isDark ? { backgroundColor: 'rgba(255,255,255,0.08)' } : {}}
+              aria-label="Open menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
             <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide flex-shrink-0', cfg.badge)}>
               {cfg.label}
             </span>
@@ -363,7 +473,7 @@ export function DemoShell({ children }: { children: React.ReactNode }) {
           className="flex-1 overflow-y-auto animate-slide-in"
           style={{ backgroundColor: isDark ? '#0d1523' : '#f1f5f9' }}
         >
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {children}
           </div>
         </main>
