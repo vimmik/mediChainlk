@@ -1,11 +1,11 @@
 'use client';
 
-import { ORDERS } from '@/lib/mock-data';
-import { useDemoStore, useHasHydrated } from '@/store/demo-store';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ORDERS } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
-import { ShoppingCart, Truck, ChevronRight } from 'lucide-react';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
+import { ChevronRight, Truck } from 'lucide-react';
 
 export default function OrdersPage() {
   const { advanceOrderStatus, getOrderStatus } = useDemoStore();

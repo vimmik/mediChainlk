@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { PRESCRIPTIONS } from '@/lib/mock-data';
-import { useDemoStore, useHasHydrated } from '@/store/demo-store';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { ConfidenceBadge, StatusBadge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { PRESCRIPTIONS } from '@/lib/mock-data';
 import { formatDate } from '@/lib/utils';
-import { FileText, CheckCircle, XCircle, Clock, ChevronRight } from 'lucide-react';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
+import { CheckCircle, ChevronRight, FileText, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 export default function PrescriptionsPage() {
   const { reviewedRx, reviewPrescription, getPrescriptionStatus } = useDemoStore();

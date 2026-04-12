@@ -1,16 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { useDemoStore, useHasHydrated } from '@/store/demo-store';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { DELIVERY_QUOTES, ORDERS, PRESCRIPTIONS } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
+import { useDemoStore, useHasHydrated } from '@/store/demo-store';
 import {
-  Camera, Upload, CheckCircle, Clock, Truck, MapPin,
-  ChevronRight, Package, Pill, Star, Phone, MessageSquare,
-  Navigation, CreditCard
+    Camera,
+    CheckCircle,
+    ChevronRight,
+    Clock,
+    CreditCard,
+    MapPin,
+    MessageSquare,
+    Navigation,
+    Package,
+    Phone,
+    Pill, Star,
+    Truck,
+    Upload
 } from 'lucide-react';
+import { useState } from 'react';
 
 const ORDER_STEPS = ['PRESCRIPTION_CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'DISPATCHED', 'DELIVERED'];
 
