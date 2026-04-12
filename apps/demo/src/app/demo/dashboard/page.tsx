@@ -1,20 +1,36 @@
 'use client';
 
-import { useDemoStore } from '@/store/demo-store';
-import { StatCard } from '@/components/ui/StatCard';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { PHARMACIES, ORDERS, PRESCRIPTIONS, REVENUE_CHART, ORDERS_CHART, RECENT_ACTIVITY, QUICK_REORDER } from '@/lib/mock-data';
+import { StatCard } from '@/components/ui/StatCard';
+import { ORDERS, ORDERS_CHART, PHARMACIES, PRESCRIPTIONS, QUICK_REORDER, RECENT_ACTIVITY, REVENUE_CHART } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
+import { useDemoStore } from '@/store/demo-store';
 import {
-  Building2, FileText, ShoppingCart, TrendingUp, Users, AlertTriangle,
-  CheckCircle, Clock, Plus, Download, FileSearch, Settings, Zap,
-  Star, Timer, Activity, RefreshCw,
+    Activity,
+    AlertTriangle,
+    Building2,
+    CheckCircle, Clock,
+    Download, FileSearch,
+    FileText,
+    Plus,
+    RefreshCw,
+    Settings,
+    ShoppingCart,
+    Star, Timer,
+    TrendingUp, Users,
+    Zap,
 } from 'lucide-react';
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
-} from 'recharts';
 import Link from 'next/link';
+import {
+    Area,
+    AreaChart,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis, YAxis,
+} from 'recharts';
 
 export default function DashboardPage() {
   const { activeRole } = useDemoStore();

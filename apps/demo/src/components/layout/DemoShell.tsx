@@ -12,7 +12,7 @@ import {
     FileText,
     LayoutDashboard,
     MapPin,
-  Menu,
+    Menu,
     Moon,
     Package,
     Pill,
@@ -24,7 +24,7 @@ import {
     Sun,
     Truck,
     Users,
-  X,
+    X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
