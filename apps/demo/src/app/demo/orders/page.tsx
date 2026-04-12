@@ -20,7 +20,7 @@ export default function OrdersPage() {
         sub="Today's order management"
       />
 
-      <div className="grid grid-cols-3 gap-4 mb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
         {[
           { label: 'Total Orders', value: ORDERS.length, color: 'text-slate-900' },
           { label: 'In Progress',  value: ORDERS.filter(o => !['DELIVERED', 'CANCELLED'].includes(statusOf(o.id))).length, color: 'text-blue-600' },
@@ -34,7 +34,8 @@ export default function OrdersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[920px]">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
@@ -83,6 +84,7 @@ export default function OrdersPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
