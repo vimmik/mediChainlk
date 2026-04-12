@@ -52,7 +52,7 @@ function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Active Pharmacies" value={PHARMACIES.filter(p => p.isActive).length} sub={`${PHARMACIES.length} total`} icon={Building2} color="blue" trend={{ value: '+1 this month', up: true }} />
         <StatCard title="Total Orders"       value={totalOrders}    sub="This month"           icon={ShoppingCart} color="green" trend={{ value: '+18% vs last', up: true }} />
         <StatCard title="Platform Revenue"   value={formatCurrency(totalRevenue)} sub="This month" icon={TrendingUp} color="purple" trend={{ value: '+9.5%', up: true }} />
@@ -151,7 +151,7 @@ function PharmacyDashboard() {
       )}
 
       {/* Today's Performance */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Avg Fill Time', value: '8 min', icon: Timer, color: 'text-blue-600 bg-blue-50' },
           { label: 'Customer Satisfaction', value: '4.8 ★', icon: Star, color: 'text-amber-600 bg-amber-50' },
@@ -217,7 +217,7 @@ function CustomerDashboard() {
     <div className="space-y-6 animate-fade-up">
       <PageHeader title="My Health Dashboard" sub="Sithum Fernando · +94 774 567 890" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title="Active Orders"       value="1"  sub="Out for delivery"  icon={ShoppingCart} color="blue" />
         <StatCard title="Prescriptions"       value="3"  sub="This month"        icon={FileText} color="green" />
         <StatCard title="Total Spent"         value="LKR 8,670" sub="This month" icon={TrendingUp} color="purple" />

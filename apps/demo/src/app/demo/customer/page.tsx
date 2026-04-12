@@ -73,7 +73,7 @@ export default function CustomerPage() {
 
       {/* Mobile phone frame */}
       <div className="flex justify-center">
-        <div className="w-[375px] bg-white rounded-[2.5rem] border-[6px] border-slate-800 shadow-2xl overflow-hidden">
+        <div className="w-full max-w-[375px] bg-white rounded-[2.5rem] border-4 sm:border-[6px] border-slate-800 shadow-2xl overflow-hidden">
 
           {/* Status bar */}
           <div className="bg-slate-900 text-white text-xs flex items-center justify-between px-6 py-2">
@@ -330,7 +330,7 @@ export default function CustomerPage() {
                 )}
 
                 {/* Actions */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button className="flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-medium py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
                     <Phone className="w-3.5 h-3.5" /> Call Pharmacy
                   </button>
