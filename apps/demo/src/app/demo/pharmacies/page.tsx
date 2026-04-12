@@ -1,10 +1,10 @@
 'use client';
 
-import { PHARMACIES } from '@/lib/mock-data';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { PHARMACIES } from '@/lib/mock-data';
 import { formatCurrency } from '@/lib/utils';
-import { Building2, MapPin, Hash } from 'lucide-react';
+import { Building2, Hash, MapPin } from 'lucide-react';
 
 export default function PharmaciesPage() {
   return (
