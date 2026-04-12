@@ -1,42 +1,60 @@
 @import "tailwindcss";
 @source "../../";
 
+/* ── Design Tokens ─────────────────────────────────────── */
 :root {
   --sidebar: #0f172a;
-  --sidebar-hover: #1e293b;
+  --sidebar-hover: rgba(255,255,255,0.07);
   --sidebar-active: #2563eb;
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
-  --bg-body: #f8fafc;
+  --bg-body: #f1f5f9;
   --bg-card: #ffffff;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.09), 0 4px 10px rgba(0,0,0,0.06);
 }
 
 .dark {
-  --sidebar: #0a0f1e;
-  --sidebar-hover: #131929;
+  --sidebar: #0b1120;
+  --sidebar-hover: rgba(255,255,255,0.06);
   --sidebar-active: #2563eb;
   --primary: #3b82f6;
   --primary-dark: #2563eb;
-  --bg-body: #0f1629;
-  --bg-card: #1a2236;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --border-color: #1e293b;
+  --bg-body: #0d1523;
+  --bg-card: #14202e;
+  --text-primary: #f0f4f8;
+  --text-secondary: #8da0b8;
+  --border-color: #1c2e42;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 32px rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.4);
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: var(--bg-body);
   color: var(--text-primary);
+  line-height: 1.5;
 }
 
-.dark body {
-  background: #0f1629;
-  color: #f1f5f9;
-}
+/* ── Custom Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #1e3a52; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #2d5070; }
 
 /* Smooth transitions */
 * {
@@ -102,23 +120,119 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08), 0 10px 24px -4px rgba(0,0,0,0.10);
 }
 
-/* ── Dark mode card / bg overrides ──────────────────────── */
-.dark .bg-white          { background-color: #1a2236 !important; }
-.dark .bg-slate-50       { background-color: #0f1629 !important; }
-.dark .bg-slate-100      { background-color: #1e293b !important; }
-.dark .border-slate-200  { border-color: #1e293b !important; }
-.dark .text-slate-900    { color: #f1f5f9 !important; }
+/* ── Dark mode: Backgrounds ────────────────────────────── */
+.dark .bg-white          { background-color: #14202e !important; }
+.dark .bg-slate-50       { background-color: #0d1523 !important; }
+.dark .bg-slate-100      { background-color: #1a2840 !important; }
+.dark .bg-slate-200      { background-color: #1c2e44 !important; }
+
+/* ── Dark mode: Borders ────────────────────────────────── */
+.dark .border-slate-200  { border-color: #1c2e42 !important; }
+.dark .border-slate-100  { border-color: #172535 !important; }
+.dark .border-b          { border-color: #1c2e42 !important; }
+.dark .divide-slate-50  > * + * { border-color: #172232 !important; }
+.dark .divide-slate-100 > * + * { border-color: #1a2840 !important; }
+
+/* ── Dark mode: Text (WCAG AA compliant) ───────────────── */
+.dark .text-slate-900    { color: #f0f4f8 !important; }
 .dark .text-slate-800    { color: #e2e8f0 !important; }
 .dark .text-slate-700    { color: #cbd5e1 !important; }
 .dark .text-slate-600    { color: #94a3b8 !important; }
-.dark .text-slate-500    { color: #64748b !important; }
-.dark .text-slate-400    { color: #475569 !important; }
-.dark .hover\:bg-slate-50:hover  { background-color: #1e293b !important; }
-.dark .hover\:bg-slate-100:hover { background-color: #1e293b !important; }
-.dark .bg-blue-50        { background-color: #1e3a5f !important; }
-.dark .bg-green-50       { background-color: #14291f !important; }
-.dark .bg-amber-50       { background-color: #2a1f00 !important; }
-.dark .bg-red-50         { background-color: #2a1010 !important; }
-.dark .bg-purple-50      { background-color: #1e1040 !important; }
-.dark .shadow-sm         { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.4) !important; }
-.dark .border-b          { border-color: #1e293b !important; }
+.dark .text-slate-500    { color: #8da0b8 !important; }   /* fixed: was #64748b */
+.dark .text-slate-400    { color: #607590 !important; }   /* fixed: was #475569 */
+
+/* ── Dark mode: Accent text ────────────────────────────── */
+.dark .text-blue-600     { color: #60a5fa !important; }
+.dark .text-blue-700     { color: #60a5fa !important; }
+.dark .text-blue-500     { color: #60a5fa !important; }
+.dark .text-blue-400     { color: #93c5fd !important; }
+.dark .text-green-600    { color: #4ade80 !important; }
+.dark .text-green-700    { color: #4ade80 !important; }
+.dark .text-emerald-600  { color: #34d399 !important; }
+.dark .text-emerald-400  { color: #34d399 !important; }
+.dark .text-amber-600    { color: #fbbf24 !important; }
+.dark .text-amber-700    { color: #fbbf24 !important; }
+.dark .text-amber-500    { color: #fbbf24 !important; }
+.dark .text-red-600      { color: #f87171 !important; }
+.dark .text-red-700      { color: #f87171 !important; }
+.dark .text-red-500      { color: #f87171 !important; }
+.dark .text-purple-600   { color: #c084fc !important; }
+.dark .text-purple-700   { color: #c084fc !important; }
+.dark .text-orange-600   { color: #fb923c !important; }
+.dark .text-orange-700   { color: #fb923c !important; }
+
+/* ── Dark mode: Colored backgrounds (badges, banners) ─── */
+.dark .bg-blue-50        { background-color: rgba(59,130,246,0.10) !important; }
+.dark .bg-blue-100       { background-color: rgba(59,130,246,0.15) !important; }
+.dark .bg-green-50       { background-color: rgba(34,197,94,0.08) !important; }
+.dark .bg-green-100      { background-color: rgba(34,197,94,0.14) !important; }
+.dark .bg-emerald-100    { background-color: rgba(52,211,153,0.14) !important; }
+.dark .bg-amber-50       { background-color: rgba(245,158,11,0.08) !important; }
+.dark .bg-amber-100      { background-color: rgba(245,158,11,0.14) !important; }
+.dark .bg-yellow-100     { background-color: rgba(234,179,8,0.12) !important; }
+.dark .bg-red-50         { background-color: rgba(239,68,68,0.08) !important; }
+.dark .bg-red-100        { background-color: rgba(239,68,68,0.14) !important; }
+.dark .bg-purple-50      { background-color: rgba(168,85,247,0.08) !important; }
+.dark .bg-purple-100     { background-color: rgba(168,85,247,0.14) !important; }
+.dark .bg-orange-100     { background-color: rgba(249,115,22,0.14) !important; }
+
+/* ── Dark mode: Badge rings ────────────────────────────── */
+.dark .ring-blue-200     { --tw-ring-color: rgba(59,130,246,0.3) !important; }
+.dark .ring-green-200    { --tw-ring-color: rgba(34,197,94,0.3) !important; }
+.dark .ring-emerald-200  { --tw-ring-color: rgba(52,211,153,0.3) !important; }
+.dark .ring-red-200      { --tw-ring-color: rgba(239,68,68,0.3) !important; }
+.dark .ring-amber-200    { --tw-ring-color: rgba(245,158,11,0.3) !important; }
+.dark .ring-yellow-200   { --tw-ring-color: rgba(234,179,8,0.3) !important; }
+.dark .ring-purple-200   { --tw-ring-color: rgba(168,85,247,0.3) !important; }
+.dark .ring-slate-200    { --tw-ring-color: rgba(148,163,184,0.2) !important; }
+.dark .ring-orange-200   { --tw-ring-color: rgba(249,115,22,0.3) !important; }
+
+/* ── Dark mode: Hover states ───────────────────────────── */
+.dark .hover\:bg-slate-50:hover       { background-color: #1a2840 !important; }
+.dark .hover\:bg-slate-50\/70:hover   { background-color: rgba(26,40,64,0.7) !important; }
+.dark .hover\:bg-slate-100:hover      { background-color: #1a2840 !important; }
+.dark .hover\:bg-red-50:hover         { background-color: rgba(239,68,68,0.10) !important; }
+.dark .hover\:bg-red-100:hover        { background-color: rgba(239,68,68,0.18) !important; }
+.dark .hover\:bg-green-50:hover       { background-color: rgba(34,197,94,0.10) !important; }
+.dark .hover\:bg-green-100:hover      { background-color: rgba(34,197,94,0.18) !important; }
+.dark .hover\:bg-blue-700:hover       { background-color: #1d4ed8 !important; }
+.dark .hover\:text-slate-600:hover    { color: #94a3b8 !important; }
+.dark .hover\:text-blue-800:hover     { color: #93c5fd !important; }
+.dark .hover\:text-red-600:hover      { color: #fca5a5 !important; }
+.dark .hover\:text-green-600:hover    { color: #86efac !important; }
+
+/* ── Dark mode: Shadows ────────────────────────────────── */
+.dark .shadow-sm         { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+.dark .shadow            { box-shadow: 0 2px 6px rgba(0,0,0,0.45) !important; }
+.dark .shadow-md         { box-shadow: 0 4px 14px rgba(0,0,0,0.45) !important; }
+.dark .shadow-lg         { box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important; }
+.dark .shadow-xl         { box-shadow: 0 20px 48px rgba(0,0,0,0.55) !important; }
+
+/* ── Dark mode: Form inputs ────────────────────────────── */
+.dark input[type="text"],
+.dark input[type="search"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input:not([type]),
+.dark select,
+.dark textarea {
+  background-color: #0d1523 !important;
+  border-color: #1c2e42 !important;
+  color: #e2e8f0 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #485d78 !important; }
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+  border-color: #3b82f6 !important;
+  outline: none;
+}
+
+/* ── StatCard colored accent border ───────────────────── */
+.stat-accent-blue   { border-left: 3px solid #3b82f6 !important; }
+.stat-accent-green  { border-left: 3px solid #22c55e !important; }
+.stat-accent-amber  { border-left: 3px solid #f59e0b !important; }
+.stat-accent-red    { border-left: 3px solid #ef4444 !important; }
+.stat-accent-purple { border-left: 3px solid #a855f7 !important; }
