@@ -57,9 +57,14 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   const navItems = role === 'pharmacy_admin' ? PHARMACY_ADMIN_NAV : SYSTEM_ADMIN_NAV;
 
-  const visibleItems = navItems.filter(
-    (item) => item.permission === null || permissions.includes(item.permission),
-  );
+  // While auth is loading (permissions still empty), show all nav items so
+  // the sidebar is immediately interactive. Once permissions resolve, filter.
+  const visibleItems =
+    permissions.length === 0
+      ? navItems
+      : navItems.filter(
+          (item) => item.permission === null || permissions.includes(item.permission),
+        );
 
   const handleLogout = async () => {
     try {

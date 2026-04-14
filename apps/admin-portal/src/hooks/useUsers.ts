@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface User {
   id: string;
@@ -93,7 +94,11 @@ export function useInviteUser() {
   return useMutation({
     mutationFn: (payload: InviteUserPayload) =>
       api.post('/users/invite', payload).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User invited successfully');
+    },
+    onError: () => toast.error('Failed to invite user'),
   });
 }
 
@@ -105,7 +110,9 @@ export function useUpdateUser() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['users'] });
       qc.invalidateQueries({ queryKey: ['users', id] });
+      toast.success('User updated successfully');
     },
+    onError: () => toast.error('Failed to update user'),
   });
 }
 
@@ -113,7 +120,11 @@ export function useDeactivateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/deactivate`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User deactivated');
+    },
+    onError: () => toast.error('Failed to deactivate user'),
   });
 }
 
@@ -121,7 +132,11 @@ export function useReactivateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.patch(`/users/${id}/reactivate`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User reactivated');
+    },
+    onError: () => toast.error('Failed to reactivate user'),
   });
 }
 
@@ -129,6 +144,10 @@ export function useDeleteUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/users/${id}`).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User deleted');
+    },
+    onError: () => toast.error('Failed to delete user'),
   });
 }

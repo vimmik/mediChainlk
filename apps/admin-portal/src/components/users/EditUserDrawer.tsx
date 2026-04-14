@@ -48,7 +48,8 @@ interface Props {
 }
 
 export function EditUserDrawer({ user, open, onClose }: Props) {
-  const { data: tenants } = useTenants();
+  const { data: tenantsData } = useTenants();
+  const tenants = tenantsData?.data ?? [];
   const updateUser = useUpdateUser();
   const deactivateUser = useDeactivateUser();
   const reactivateUser = useReactivateUser();
@@ -270,7 +271,7 @@ export function EditUserDrawer({ user, open, onClose }: Props) {
                     {...register('tenantId')}
                   >
                     <option value="">—</option>
-                    {tenants?.map((t: { id: string; name: string }) => (
+                    {tenants.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>

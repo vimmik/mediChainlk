@@ -18,7 +18,9 @@
       "Bash(node -e ':*)",
       "Bash(npm list:*)",
       "Bash(taskkill //F //IM node.exe //T)",
-      "Bash(curl -s http://localhost:3001/health)"
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(curl -s --max-time 10 \"https://ep-solitary-flower-a1sacgh0-pooler.ap-southeast-1.aws.neon.tech\")",
+      "Bash(nslookup ep-solitary-flower-a1sacgh0-pooler.ap-southeast-1.aws.neon.tech)"
     ],
     "additionalDirectories": [
       "e:\\Projects\\mediChainlk\\apps\\admin-portal\\src\\app\\(dashboard)\\users",

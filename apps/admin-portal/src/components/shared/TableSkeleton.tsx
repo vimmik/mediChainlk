@@ -19,14 +19,18 @@ export function TableSkeleton({ rows = 6, cols = 5 }: TableSkeletonProps) {
         <tbody>
           {Array.from({ length: rows }).map((_, i) => (
             <tr key={i}>
-              {Array.from({ length: cols }).map((_, j) => (
-                <td key={j} className="px-4 py-3.5">
-                  <div
-                    className="skeleton-shimmer h-4 rounded"
-                    style={{ width: `${60 + Math.random() * 30}%`, animationDelay: `${i * 0.08}s` }}
-                  />
-                </td>
-              ))}
+              {Array.from({ length: cols }).map((_, j) => {
+                // Deterministic width — same on SSR and client
+                const width = 60 + ((i * cols + j) * 17 + 13) % 30;
+                return (
+                  <td key={j} className="px-4 py-3.5">
+                    <div
+                      className="skeleton-shimmer h-4 rounded"
+                      style={{ width: `${width}%`, animationDelay: `${i * 0.08}s` }}
+                    />
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

@@ -34,7 +34,8 @@ interface Props {
 
 export function InviteUserModal({ open, onClose }: Props) {
   const [showPassword, setShowPassword] = useState(false);
-  const { data: tenants } = useTenants();
+  const { data: tenantsData } = useTenants();
+  const tenants = tenantsData?.data ?? [];
   const inviteUser = useInviteUser();
 
   const {
@@ -136,7 +137,7 @@ export function InviteUserModal({ open, onClose }: Props) {
                 {...register('tenantId')}
               >
                 <option value="">Select pharmacy…</option>
-                {tenants?.map((t: { id: string; name: string }) => (
+                {tenants.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>

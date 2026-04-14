@@ -17,11 +17,13 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
 
-  // On mount, read saved preference or default to dark
+  // On mount, read saved preference and sync the DOM class.
+  // suppressHydrationWarning on <html> covers the class change.
   useEffect(() => {
     const saved = (localStorage.getItem('medi-theme') as Theme | null) ?? 'dark';
-    setTheme(saved);
+    if (saved !== theme) setTheme(saved);
     applyTheme(saved);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggle = () => {

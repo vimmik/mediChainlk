@@ -19,7 +19,10 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const tokenResult = await firebaseUser.getIdTokenResult(/* forceRefresh */ true);
+          // Use cached claims — avoid a forced network call on every auth-state
+          // change (happens every ~1 h on token auto-refresh). We only force-
+          // refresh when we need to POST a fresh ID token to the backend below.
+          const tokenResult = await firebaseUser.getIdTokenResult(false);
           const claims = tokenResult.claims as {
             role?: string;
             tenantId?: string;

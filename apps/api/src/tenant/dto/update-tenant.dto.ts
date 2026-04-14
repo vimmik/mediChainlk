@@ -1,39 +1,41 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, MaxLength } from 'class-validator';
 
-export class CreateTenantDto {
-  @ApiProperty({ example: 'ABC Pharmacy' })
+export class UpdateTenantDto {
+  @ApiPropertyOptional({ example: 'ABC Pharmacy' })
   @IsString()
   @IsNotEmpty()
+  @IsOptional()
   @MaxLength(128)
-  name!: string;
+  name?: string;
 
-  @ApiProperty({ example: 'abc-pharmacy', description: 'URL-safe slug, lowercase with hyphens' })
+  @ApiPropertyOptional({ example: 'abc-pharmacy' })
   @IsString()
   @IsNotEmpty()
+  @IsOptional()
   @MaxLength(64)
   @Matches(/^[a-z0-9-]+$/, { message: 'Slug must be lowercase letters, numbers, and hyphens only' })
-  slug!: string;
+  slug?: string;
 
-  @ApiPropertyOptional({ example: 'ABC Pharmacy (Pvt) Ltd' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(256)
   legalName?: string;
 
-  @ApiPropertyOptional({ example: 'PV00123456' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(64)
   registrationNo?: string;
 
-  @ApiPropertyOptional({ example: '123456789-0000' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(64)
   taxId?: string;
 
-  @ApiPropertyOptional({ enum: ['sole_proprietorship', 'partnership', 'pvt_ltd', 'plc'], default: 'sole_proprietorship' })
+  @ApiPropertyOptional({ enum: ['sole_proprietorship', 'partnership', 'pvt_ltd', 'plc'] })
   @IsString()
   @IsOptional()
   @IsIn(['sole_proprietorship', 'partnership', 'pvt_ltd', 'plc'])
@@ -46,20 +48,20 @@ export class CreateTenantDto {
   @MaxLength(2048)
   logoUrl?: string;
 
-  @ApiPropertyOptional({ example: 'https://abcpharmacy.lk' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @IsUrl({}, { message: 'website must be a valid URL' })
   @MaxLength(2048)
   website?: string;
 
-  @ApiPropertyOptional({ example: 'info@abcpharmacy.lk' })
+  @ApiPropertyOptional()
   @IsEmail()
   @IsOptional()
   @MaxLength(256)
   email?: string;
 
-  @ApiPropertyOptional({ example: '+94112345678' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(32)
@@ -78,32 +80,32 @@ export class CreateTenantDto {
   @MaxLength(256)
   addressLine2?: string;
 
-  @ApiPropertyOptional({ example: 'Colombo' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(128)
   city?: string;
 
-  @ApiPropertyOptional({ example: 'Colombo' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(128)
   district?: string;
 
-  @ApiPropertyOptional({ example: 'Western' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(128)
   province?: string;
 
-  @ApiPropertyOptional({ example: '10100' })
+  @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   @MaxLength(16)
   @Matches(/^[0-9]{4,10}$/, { message: 'postalCode must be 4-10 digits' })
   postalCode?: string;
 
-  @ApiPropertyOptional({ enum: ['free', 'basic', 'professional', 'enterprise'], default: 'free' })
+  @ApiPropertyOptional({ enum: ['free', 'basic', 'professional', 'enterprise'] })
   @IsString()
   @IsOptional()
   @IsIn(['free', 'basic', 'professional', 'enterprise'])
@@ -114,4 +116,9 @@ export class CreateTenantDto {
   @IsOptional()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

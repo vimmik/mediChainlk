@@ -62,19 +62,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // After the early-return above, session is guaranteed to be a SessionPayload object.
+  const resolvedSession = session as SessionPayload;
+
   // Authenticated user visiting a public auth page → send them home.
   // This covers http://localhost:3002/, /login, /forgot-password when the
   // user already has a session.
-  if (session?.authenticated && (pathname === '/' || isPublicPath(pathname))) {
+  if (resolvedSession?.authenticated && (pathname === '/' || isPublicPath(pathname))) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Root path for unauthenticated users → login
-  if (pathname === '/' && !session?.authenticated) {
+  if (pathname === '/' && !resolvedSession?.authenticated) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const decision = decideAccess(pathname, session ?? null);
+  const decision = decideAccess(pathname, resolvedSession ?? null);
 
   if (decision.kind === 'allow') {
     return NextResponse.next();
