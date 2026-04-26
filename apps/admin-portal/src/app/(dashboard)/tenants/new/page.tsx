@@ -177,6 +177,7 @@ export default function NewTenantPage() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   // Debounce timer ref for draft saving
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -214,6 +215,8 @@ export default function NewTenantPage() {
       if (draftTimer.current) clearTimeout(draftTimer.current);
       draftTimer.current = setTimeout(() => {
         saveDraft(values as FormValues);
+        setDraftSaved(true);
+        setTimeout(() => setDraftSaved(false), 2500);
       }, 800);
     });
     return () => {
@@ -335,6 +338,14 @@ export default function NewTenantPage() {
         <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3 text-sm text-blue-400 flex items-center gap-2">
           <Check className="w-4 h-4 shrink-0" />
           Draft restored — your previous progress has been loaded.
+        </div>
+      )}
+
+      {/* Draft saved banner */}
+      {draftSaved && !draftRestored && (
+        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
+          <Check className="w-4 h-4 shrink-0" />
+          Draft saved — your progress has been saved automatically.
         </div>
       )}
 

@@ -484,7 +484,22 @@ body {
 
 .dark .glass-select,
 .dark select.glass-input {
-  color-scheme: dark;
+  /* Keep color-scheme light so the OS renders a light popup — avoids
+     invisible white-on-white text in dark mode on Windows/Chrome. */
+  color-scheme: light;
+}
+
+/* Force option legibility regardless of OS/browser dark-mode heuristics */
+select.glass-input option,
+.glass-select option {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.dark select.glass-input option,
+.dark .glass-select option {
+  background-color: #1e293b;
+  color: #e2e8f0;
 }
 
 .glass-select {

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 
 @Injectable()
 export class PermissionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   async findAll() {
     return this.prisma.screenPermission.findMany({
@@ -46,6 +50,10 @@ export class PermissionsService {
         }),
       ),
     );
+
+    // Bump the version so active sessions for this role re-resolve permissions
+    // on their next request instead of carrying stale data for up to 8 hours.
+    await this.redis.bumpRolePermissionVersion(role);
 
     return this.findByRole(role);
   }

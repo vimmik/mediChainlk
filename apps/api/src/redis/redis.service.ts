@@ -52,6 +52,7 @@ export class RedisService implements OnModuleDestroy {
       tenantId: string | null;
       permissions: string[];
       email?: string;
+      permVersion?: number;
     },
     ttlSeconds = 8 * 3600,
   ): Promise<void> {
@@ -72,6 +73,7 @@ export class RedisService implements OnModuleDestroy {
     permissions: string[];
     email?: string;
     createdAt: number;
+    permVersion?: number;
   } | null> {
     const raw = await this.client.get(`session:${sessionId}`);
     if (!raw) return null;
@@ -90,6 +92,20 @@ export class RedisService implements OnModuleDestroy {
 
   async extendSession(sessionId: string, ttlSeconds = 8 * 3600): Promise<void> {
     await this.client.expire(`session:${sessionId}`, ttlSeconds);
+  }
+
+  // ─── Role permission versioning ─────────────────────────────────────────
+  // When a role's permissions change, bump the version. Sessions store the
+  // version at creation time; a mismatch forces a permissions re-resolve
+  // without requiring a full re-login.
+
+  async bumpRolePermissionVersion(role: string): Promise<number> {
+    return this.client.incr(`role_perm_ver:${role}`);
+  }
+
+  async getRolePermissionVersion(role: string): Promise<number> {
+    const v = await this.client.get(`role_perm_ver:${role}`);
+    return v ? parseInt(v, 10) : 0;
   }
 
   // ─── Token blacklist ────────────────────────────────────────────────────

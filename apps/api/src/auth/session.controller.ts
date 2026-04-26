@@ -100,6 +100,8 @@ export class SessionController {
       throw new ForbiddenException(`Account temporarily locked: ${lockReason}`);
     }
 
+    const permVersion = await this.redis.getRolePermissionVersion(role);
+
     const sessionId = randomBytes(32).toString('base64url');
     await this.redis.setSession(
       sessionId,
@@ -109,6 +111,7 @@ export class SessionController {
         tenantId,
         permissions,
         email: decoded.email,
+        permVersion,
       },
       SESSION_TTL_SECONDS,
     );
@@ -179,14 +182,30 @@ export class SessionController {
       return { authenticated: false, locked: true };
     }
 
-    // Rolling session: refresh TTL on activity
-    await this.redis.extendSession(sessionId, SESSION_TTL_SECONDS);
+    // If role permissions were updated since this session was created,
+    // re-resolve and patch the session in-place (no re-login required).
+    const currentPermVersion = await this.redis.getRolePermissionVersion(session.role);
+    let { permissions } = session;
+    if ((session.permVersion ?? 0) < currentPermVersion) {
+      permissions = await this.resolvePermissions(session.role, session.permissions);
+      await this.redis.setSession(
+        sessionId,
+        { ...session, permissions, permVersion: currentPermVersion },
+        SESSION_TTL_SECONDS,
+      );
+      this.logger.log(
+        `Permissions re-resolved for uid=${session.uid} role=${session.role} (v${session.permVersion ?? 0}→v${currentPermVersion})`,
+      );
+    } else {
+      // Rolling session: refresh TTL on activity
+      await this.redis.extendSession(sessionId, SESSION_TTL_SECONDS);
+    }
 
     return {
       authenticated: true,
       role: session.role,
       tenantId: session.tenantId,
-      permissions: session.permissions,
+      permissions,
     };
   }
 

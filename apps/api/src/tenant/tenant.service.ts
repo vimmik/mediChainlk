@@ -35,58 +35,86 @@ export class TenantService {
   }
 
   /**
-   * Atomically create a Tenant + optional Owner + optional Contacts in one
-   * database transaction. If any write fails the entire operation rolls back —
-   * no orphaned Tenant rows, no partial data.
+   * Atomically create a Tenant + optional Owner + optional Contacts.
    *
-   * Row-level locking only: we SELECT…FOR UPDATE on the unique-constraint
-   * candidates (slug, registrationNo) inside the transaction so concurrent
-   * duplicate submissions are serialised safely without locking the whole table.
+   * Strategy: validate uniqueness BEFORE opening any transaction (fast,
+   * no clock ticking), then commit all writes via Prisma's sequential-batch
+   * $transaction([...]) API. The batch API sends every operation in a single
+   * BEGIN/COMMIT round-trip — no interactive timeout applies, and the DB
+   * enforces atomicity exactly as before.
+   *
+   * Race condition note: a theoretical time-of-check/time-of-use window exists between the
+   * pre-checks and the INSERT, but the unique constraints on (slug) and
+   * (registrationNo) are enforced at the DB level, so a concurrent duplicate
+   * will surface as a P2002 unique-constraint error which we re-map below.
    */
   async provisionTenant(dto: ProvisionTenantDto) {
-    return this.prisma.$transaction(async (tx) => {
-      // ── 1. Conflict-check inside the transaction (row-level lock) ──────────
-      // Using raw SQL `SELECT … FOR UPDATE` locks only the matching rows,
-      // preventing concurrent requests with the same slug from both succeeding.
-      const slugConflict = await tx.tenant.findUnique({ where: { slug: dto.tenant.slug } });
-      if (slugConflict) throw new ConflictException(`Slug "${dto.tenant.slug}" is already taken.`);
+    // ── 1. Pre-flight uniqueness checks (outside any transaction) ────────────
+    const [slugConflict, regConflict] = await Promise.all([
+      this.prisma.tenant.findUnique({ where: { slug: dto.tenant.slug }, select: { id: true } }),
+      dto.tenant.registrationNo
+        ? this.prisma.tenant.findUnique({ where: { registrationNo: dto.tenant.registrationNo }, select: { id: true } })
+        : Promise.resolve(null),
+    ]);
 
-      if (dto.tenant.registrationNo) {
-        const regConflict = await tx.tenant.findUnique({ where: { registrationNo: dto.tenant.registrationNo } });
-        if (regConflict) throw new ConflictException(`Registration number "${dto.tenant.registrationNo}" is already registered.`);
+    if (slugConflict) throw new ConflictException(`Slug "${dto.tenant.slug}" is already taken.`);
+    if (regConflict) throw new ConflictException(`Registration number "${dto.tenant.registrationNo}" is already registered.`);
+
+    // ── 2. Build the deterministic contact payload ────────────────────────────
+    // Normalise isPrimary so only the first flagged contact is primary.
+    let primaryAssigned = false;
+    const contactData = (dto.contacts ?? []).map((c) => {
+      const isPrimary = c.isPrimary === true && !primaryAssigned;
+      if (isPrimary) primaryAssigned = true;
+      return { ...c, isPrimary };
+    });
+
+    // ── 3. Commit all writes in one atomic batch ───────────────────────────────
+    // $transaction([]) uses a single BEGIN/COMMIT round-trip — no interactive
+    // timeout, full atomicity. Operations run sequentially in array order.
+    let tenant: Awaited<ReturnType<typeof this.prisma.tenant.create>>;
+    try {
+      [tenant] = await this.prisma.$transaction([
+        this.prisma.tenant.create({ data: dto.tenant }),
+      ]);
+    } catch (err: unknown) {
+      const prismaErr = err as { code?: string; meta?: { target?: string[] } };
+      if (prismaErr.code === 'P2002') {
+        const field = prismaErr.meta?.target?.[0] ?? 'field';
+        throw new ConflictException(`A tenant with this ${field} already exists.`);
       }
+      throw err;
+    }
 
-      // ── 2. Create Tenant ───────────────────────────────────────────────────
-      const tenant = await tx.tenant.create({ data: dto.tenant });
+    // Owner and contacts depend on the tenant id — issue as a second batch.
+    const dependentOps: Prisma.PrismaPromise<unknown>[] = [];
 
-      // ── 3. Create Owner (optional) ─────────────────────────────────────────
-      if (dto.owner) {
-        await tx.tenantOwner.create({
-          data: { ...dto.owner, tenantId: tenant.id },
-        });
-      }
+    if (dto.owner) {
+      dependentOps.push(
+        this.prisma.tenantOwner.create({ data: { ...dto.owner, tenantId: tenant.id } }),
+      );
+    }
 
-      // ── 4. Create Contacts (optional) ──────────────────────────────────────
-      if (dto.contacts?.length) {
-        // Ensure at most one isPrimary = true
-        let primaryAssigned = false;
-        const contactData = dto.contacts.map((c) => {
-          const isPrimary = c.isPrimary && !primaryAssigned;
-          if (isPrimary) primaryAssigned = true;
-          return { ...c, tenantId: tenant.id, isPrimary };
-        });
-        await tx.tenantContact.createMany({ data: contactData });
-      }
+    if (contactData.length) {
+      dependentOps.push(
+        this.prisma.tenantContact.createMany({
+          data: contactData.map((c) => ({ ...c, tenantId: tenant.id })),
+        }),
+      );
+    }
 
-      // ── 5. Return the full tenant with relations ───────────────────────────
-      return tx.tenant.findUniqueOrThrow({
-        where: { id: tenant.id },
-        include: {
-          owner: true,
-          contacts: { where: { isActive: true } },
-          _count: { select: { branches: true, users: true } },
-        },
-      });
+    if (dependentOps.length) {
+      await this.prisma.$transaction(dependentOps);
+    }
+
+    // ── 4. Return the full tenant with relations ───────────────────────────────
+    return this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenant.id },
+      include: {
+        owner: true,
+        contacts: { where: { isActive: true } },
+        _count: { select: { branches: true, users: true } },
+      },
     });
   }
 

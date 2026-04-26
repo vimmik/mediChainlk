@@ -87,9 +87,13 @@ function CreateBranchModal({ tenantId, open, onClose }: { tenantId: string; open
   });
 
   const onSubmit = async (data: BranchForm) => {
-    await create.mutateAsync(data);
-    reset();
-    onClose();
+    try {
+      await create.mutateAsync(data);
+      reset();
+      onClose();
+    } catch {
+      // error toast is handled in useCreateBranch onError
+    }
   };
 
   return (
@@ -162,9 +166,13 @@ function AddContactModal({ tenantId, open, onClose }: { tenantId: string; open: 
   });
 
   const onSubmit = async (data: ContactForm) => {
-    await create.mutateAsync(data as Record<string, unknown>);
-    reset();
-    onClose();
+    try {
+      await create.mutateAsync(data as Record<string, unknown>);
+      reset();
+      onClose();
+    } catch {
+      // error toast is handled in useCreateContact onError
+    }
   };
 
   return (
@@ -234,9 +242,13 @@ function AddDocumentModal({ tenantId, open, onClose }: { tenantId: string; open:
   });
 
   const onSubmit = async (data: DocumentForm) => {
-    await create.mutateAsync(data as Record<string, unknown>);
-    reset();
-    onClose();
+    try {
+      await create.mutateAsync(data as Record<string, unknown>);
+      reset();
+      onClose();
+    } catch {
+      // error toast is handled in useCreateDocument onError
+    }
   };
 
   return (
@@ -327,8 +339,12 @@ function OwnerTab({ tenantId }: { tenantId: string }) {
   };
 
   const onSubmit = async (data: OwnerForm) => {
-    await upsert.mutateAsync(data as Record<string, unknown>);
-    setEditing(false);
+    try {
+      await upsert.mutateAsync(data as Record<string, unknown>);
+      setEditing(false);
+    } catch {
+      // error toast is handled in useUpsertOwner onError
+    }
   };
 
   if (isLoading) return <DetailSkeleton sections={1} fieldsPerSection={6} />;
