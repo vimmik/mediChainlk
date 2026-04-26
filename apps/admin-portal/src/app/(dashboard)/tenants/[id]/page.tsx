@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DetailSkeleton } from '@/components/shared/TableSkeleton';
 import {
     useContacts,
-    useCreateBranch,
     useCreateContact,
     useCreateDocument,
     useDeactivateBranch,
@@ -59,7 +58,7 @@ import {
     Users
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -67,84 +66,6 @@ import { z } from 'zod';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type Tab = 'overview' | 'owner' | 'contacts' | 'documents' | 'branches';
-
-// ─── Create Branch Modal ────────────────────────────────────────────────────
-
-const branchSchema = z.object({
-  name: z.string().min(2, 'Name required'),
-  address: z.string().min(5, 'Address required'),
-  city: z.string().min(2, 'City required'),
-  district: z.string().optional(),
-  phone: z.string().min(7, 'Phone required'),
-  licenseNo: z.string().min(3, 'License number required'),
-});
-type BranchForm = z.infer<typeof branchSchema>;
-
-function CreateBranchModal({ tenantId, open, onClose }: { tenantId: string; open: boolean; onClose: () => void }) {
-  const create = useCreateBranch(tenantId);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<BranchForm>({
-    resolver: zodResolver(branchSchema),
-  });
-
-  const onSubmit = async (data: BranchForm) => {
-    try {
-      await create.mutateAsync(data);
-      reset();
-      onClose();
-    } catch {
-      // error toast is handled in useCreateBranch onError
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg glass-card border-white/20 dark:border-white/10">
-        <DialogHeader>
-          <DialogTitle className="text-slate-800 dark:text-slate-200">Add Branch Location</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="b-name" className="text-slate-600 dark:text-slate-400 text-xs">Branch Name</Label>
-              <input id="b-name" placeholder="e.g. ABC Colombo" {...register('name')} className="glass-input w-full" />
-              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
-            </div>
-            <div className="col-span-2 space-y-1">
-              <Label htmlFor="b-address" className="text-slate-600 dark:text-slate-400 text-xs">Address</Label>
-              <input id="b-address" placeholder="123 Main Street, Colombo 03" {...register('address')} className="glass-input w-full" />
-              {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b-city" className="text-slate-600 dark:text-slate-400 text-xs">City</Label>
-              <input id="b-city" placeholder="Colombo" {...register('city')} className="glass-input w-full" />
-              {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b-district" className="text-slate-600 dark:text-slate-400 text-xs">District</Label>
-              <input id="b-district" placeholder="Western (optional)" {...register('district')} className="glass-input w-full" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b-phone" className="text-slate-600 dark:text-slate-400 text-xs">Phone</Label>
-              <input id="b-phone" placeholder="+94112345678" {...register('phone')} className="glass-input w-full" />
-              {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b-license" className="text-slate-600 dark:text-slate-400 text-xs">License No.</Label>
-              <input id="b-license" placeholder="PH-LK-2024-001" {...register('licenseNo')} className="glass-input w-full" />
-              {errors.licenseNo && <p className="text-xs text-red-500">{errors.licenseNo.message}</p>}
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }} className="rounded-xl">Cancel</Button>
-            <Button type="submit" disabled={isSubmitting} className="rounded-xl glow-blue">
-              {isSubmitting ? 'Adding…' : 'Add Branch'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ─── Contact Modal ──────────────────────────────────────────────────────────
 
@@ -440,6 +361,12 @@ function OwnerTab({ tenantId }: { tenantId: string }) {
 function BranchCard({ branch, tenantId }: { branch: PharmacyBranch & { _count?: { staff: number } }; tenantId: string }) {
   const deactivate = useDeactivateBranch(tenantId);
 
+  const hoursLabel = branch.isOpen24h
+    ? '24 hrs'
+    : branch.openingTime && branch.closingTime
+    ? `${branch.openingTime} – ${branch.closingTime}`
+    : null;
+
   return (
     <div className="section-glass hover-lift group">
       <div className="flex items-start justify-between mb-3">
@@ -448,7 +375,10 @@ function BranchCard({ branch, tenantId }: { branch: PharmacyBranch & { _count?: 
             <Building2 className="w-4 h-4 text-violet-500/70" />
           </div>
           <div>
-            <div className="font-semibold text-slate-800 dark:text-slate-200">{branch.name}</div>
+            <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              {branch.name}
+              {branch.isMainBranch && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+            </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {branch.city}{branch.district ? `, ${branch.district}` : ''}
@@ -467,9 +397,10 @@ function BranchCard({ branch, tenantId }: { branch: PharmacyBranch & { _count?: 
 
       <div className="text-xs text-slate-400 dark:text-slate-500 mb-4">{branch.address}</div>
 
-      <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500 mb-4 pt-3 border-t border-white/10 dark:border-white/5">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500 mb-4 pt-3 border-t border-white/10 dark:border-white/5">
         <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{branch.phone}</span>
-        <span className="font-mono flex items-center gap-1"><Star className="w-3 h-3" />{branch.licenseNo}</span>
+        <span className="font-mono flex items-center gap-1"><ShieldCheck className="w-3 h-3" />{branch.licenseNo}</span>
+        {hoursLabel && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{hoursLabel}</span>}
         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{branch._count?.staff ?? 0} staff</span>
       </div>
 
@@ -545,9 +476,9 @@ const docTypeLabels: Record<string, string> = {
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: tenant, isLoading } = useTenant(id);
   const [tab, setTab] = useState<Tab>('overview');
-  const [createBranchOpen, setCreateBranchOpen] = useState(false);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addDocumentOpen, setAddDocumentOpen] = useState(false);
 
@@ -855,7 +786,7 @@ export default function TenantDetailPage() {
         {tab === 'branches' && (
           <div className="space-y-4">
             <div className="flex justify-end">
-              <Button onClick={() => setCreateBranchOpen(true)} className="gap-2 rounded-xl glow-blue">
+              <Button onClick={() => router.push(`/tenants/${id}/branches/new`)} className="gap-2 rounded-xl glow-blue">
                 <Plus className="w-4 h-4" />
                 Add Branch
               </Button>
@@ -866,7 +797,7 @@ export default function TenantDetailPage() {
                 title="No branches yet"
                 description="Add the first branch location for this pharmacy"
                 action={
-                  <Button onClick={() => setCreateBranchOpen(true)} className="gap-2 rounded-xl glow-blue">
+                  <Button onClick={() => router.push(`/tenants/${id}/branches/new`)} className="gap-2 rounded-xl glow-blue">
                     <Plus className="w-4 h-4" />
                     Add Branch
                   </Button>
@@ -883,7 +814,6 @@ export default function TenantDetailPage() {
         )}
       </div>
 
-      <CreateBranchModal tenantId={id} open={createBranchOpen} onClose={() => setCreateBranchOpen(false)} />
       <AddContactModal tenantId={id} open={addContactOpen} onClose={() => setAddContactOpen(false)} />
       <AddDocumentModal tenantId={id} open={addDocumentOpen} onClose={() => setAddDocumentOpen(false)} />
     </>

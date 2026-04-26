@@ -352,8 +352,11 @@ export function useAssignBranchUser(tenantId: string, branchId: string) {
   return useMutation({
     mutationFn: (data: { userId: string; isPrimary?: boolean }) =>
       api.post(`/tenants/${tenantId}/branches/${branchId}/staff`, data),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['tenants', tenantId, 'branches', branchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenants', tenantId, 'branches', branchId] });
+      toast.success('Staff assigned to branch');
+    },
+    onError: () => toast.error('Failed to assign staff'),
   });
 }
 
@@ -362,7 +365,10 @@ export function useRemoveBranchUser(tenantId: string, branchId: string) {
   return useMutation({
     mutationFn: (userId: string) =>
       api.delete(`/tenants/${tenantId}/branches/${branchId}/staff/${userId}`),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ['tenants', tenantId, 'branches', branchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenants', tenantId, 'branches', branchId] });
+      toast.success('Staff removed from branch');
+    },
+    onError: () => toast.error('Failed to remove staff'),
   });
 }
