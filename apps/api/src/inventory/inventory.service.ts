@@ -1,40 +1,24 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Inject, Injectable } from '@nestjs/common';
+import { INVENTORY_REPOSITORY, type IInventoryRepository } from './domain/repositories/inventory.repository';
 import { UpsertInventoryDto } from './dto/upsert-inventory.dto';
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@Inject(INVENTORY_REPOSITORY) private readonly inventoryRepo: IInventoryRepository) {}
 
   async findByBranch(tenantId: string, branchId: string) {
-    return this.prisma.inventoryItem.findMany({
-      where: { tenantId, branchId },
-      include: { medicine: true },
-      orderBy: { medicine: { genericName: 'asc' } },
-    });
+    return this.inventoryRepo.findByBranch(tenantId, branchId);
   }
 
   async getLowStockAlerts(tenantId: string, branchId: string) {
-    return this.prisma.inventoryItem.findMany({
-      where: {
-        tenantId,
-        branchId,
-        quantityOnHand: { lte: 10 }, // fallback; ideally compare to reorderLevel per item
-      },
-      include: { medicine: true },
-    });
+    return this.inventoryRepo.getLowStock(tenantId, branchId);
   }
 
   async upsert(dto: UpsertInventoryDto, tenantId: string) {
-    return this.prisma.inventoryItem.create({
-      data: { ...dto, tenantId },
-    });
+    return this.inventoryRepo.create({ ...dto, tenantId });
   }
 
   async adjustQuantity(id: string, quantity: number) {
-    return this.prisma.inventoryItem.update({
-      where: { id },
-      data: { quantityOnHand: { increment: quantity } },
-    });
+    return this.inventoryRepo.adjustQuantity(id, quantity);
   }
 }
