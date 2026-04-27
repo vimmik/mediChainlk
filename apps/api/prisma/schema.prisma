@@ -1,55 +1,159 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT  — the brand / company entity (e.g. "ABC Pharmacy")
+// Virtual — has no physical address; branches do.
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Tenant {
-  id         String     @id @default(cuid())
-  name       String
-  slug       String     @unique
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  pharmacies Pharmacy[]
-  users      User[]
+  id               String           @id @default(cuid())
+  name             String           // "ABC Pharmacy"  (display name)
+  legalName        String?          // registered legal entity name
+  slug             String           @unique // "abc-pharmacy"
+  registrationNo   String?          @unique // business registration number
+  taxId            String?          // VAT / TIN
+  businessType     String           @default("sole_proprietorship") // sole_proprietorship | partnership | pvt_ltd | plc
+  logoUrl          String?
+  website          String?
+  email            String?          // primary contact email
+  phone            String?          // primary contact phone
+  addressLine1     String?
+  addressLine2     String?
+  city             String?
+  district         String?
+  province         String?
+  postalCode       String?
+  isActive         Boolean          @default(true)
+  isVerified       Boolean          @default(false)
+  subscriptionPlan String           @default("free") // free | basic | professional | enterprise
+  subscriptionExpiry DateTime?
+  notes            String?          // internal admin notes
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  branches    PharmacyBranch[]
+  users       User[]           // pharmacy_admin + pharmacy_staff under this tenant
+  owner       TenantOwner?
+  contacts    TenantContact[]
+  documents   TenantDocument[]
 }
 
-model User {
-  id            String         @id @default(cuid())
-  firebaseUid   String         @unique
-  email         String?
-  phone         String?
-  firstName     String?
-  lastName      String?
-  role          String
-  tenantId      String?
-  tenant        Tenant?        @relation(fields: [tenantId], references: [id])
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  orders        Order[]
-  prescriptions Prescription[]
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// PHARMACY BRANCH  — a real physical location (e.g. "ABC Colombo")
+// system_admin creates branches; pharmacy_admin can view/manage their own.
+// ─────────────────────────────────────────────────────────────────────────────
 
-model Pharmacy {
-  id        String          @id @default(cuid())
-  tenantId  String
-  tenant    Tenant          @relation(fields: [tenantId], references: [id])
-  name      String
-  address   String
-  city      String
-  phone     String
-  licenseNo String
-  isActive  Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+model PharmacyBranch {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  name            String   // "ABC Colombo"  (display name for this branch)
+  branchCode      String?  // internal code e.g. "COL-001"
+  address         String
+  addressLine2    String?
+  city            String
+  district        String?
+  province        String?
+  postalCode      String?
+  phone           String
+  email           String?
+  licenseNo       String   @unique // each branch has its own pharmacy license
+  licenseExpiry   DateTime?
+  pharmacistName  String?  // chief pharmacist
+  pharmacistRegNo String?  // pharmacist SLMC registration number
+  latitude        Float?
+  longitude       Float?
+  openingTime     String?  // "08:00"
+  closingTime     String?  // "21:00"
+  isOpen24h       Boolean  @default(false)
+  isMainBranch    Boolean  @default(false) // headquarter branch
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  staff     UserBranchAssignment[]
   inventory InventoryItem[]
   orders    Order[]
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER BRANCH ASSIGNMENT  — M:N  (a staff member can cover multiple branches)
+// pharmacy_admin: assigned to all branches implicitly (no rows needed)
+// pharmacy_staff: explicit row per branch
+// ─────────────────────────────────────────────────────────────────────────────
+
+model UserBranchAssignment {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId   String
+  branch     PharmacyBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  isPrimary  Boolean        @default(false) // user's "home" branch
+  assignedBy String?        // Firebase UID of who made the assignment
+  assignedAt DateTime       @default(now())
+
+  @@unique([userId, branchId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER
+//
+// Roles:
+//   system_admin    — platform-wide; tenantId = null
+//   pharmacy_admin  — manages all branches under their Tenant; tenantId set
+//   pharmacy_staff  — assigned to specific branch(es); tenantId set
+//   customer        — no tenant; no branch
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  firebaseUid  String   @unique
+  email        String?
+  phone        String?
+  firstName    String?
+  lastName     String?
+
+  // system_admin | pharmacy_admin | pharmacy_staff | customer
+  role         String
+
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id])
+
+  isActive     Boolean  @default(true)
+
+  // Profile fields (from ER diagram)
+  nic          String?  @unique
+  birthday     DateTime?
+  gender       String?  // MALE | FEMALE | OTHER
+  height       Float?   // cm
+  weight       Float?   // kg
+  addressLine1 String?
+  addressLine2 String?
+  addressLine3 String?
+  district     String?
+  postalCode   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branchAssignments UserBranchAssignment[]
+  orders            Order[]
+  prescriptions     Prescription[]
+  diseases          DiseaseUserMapping[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEDICINE  — global formulary (platform-wide, not per-tenant)
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Medicine {
   id             String          @id @default(cuid())
@@ -63,29 +167,38 @@ model Medicine {
   isHighAlert    Boolean         @default(false)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
   inventoryItems InventoryItem[]
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY ITEM  — stock at a specific branch
+// ─────────────────────────────────────────────────────────────────────────────
+
 model InventoryItem {
-  id             String    @id @default(cuid())
+  id             String         @id @default(cuid())
   tenantId       String
-  pharmacyId     String
-  pharmacy       Pharmacy  @relation(fields: [pharmacyId], references: [id])
+  branchId       String
+  branch         PharmacyBranch @relation(fields: [branchId], references: [id])
   medicineId     String
-  medicine       Medicine  @relation(fields: [medicineId], references: [id])
+  medicine       Medicine       @relation(fields: [medicineId], references: [id])
   batchNo        String?
   expiryDate     DateTime?
-  quantityOnHand Int       @default(0)
-  reorderLevel   Int       @default(10)
-  unitPrice      Decimal   @db.Decimal(10, 2)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  quantityOnHand Int            @default(0)
+  reorderLevel   Int            @default(10)
+  unitPrice      Decimal        @db.Decimal(10, 2)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRESCRIPTION
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Prescription {
   id             String    @id @default(cuid())
   tenantId       String
-  pharmacyId     String
+  branchId       String
   customerId     String
   customer       User      @relation(fields: [customerId], references: [id])
   imageS3Key     String
@@ -93,37 +206,43 @@ model Prescription {
   ocrRawText     String?
   ocrResult      Json?
   confidenceTier String?
-  reviewedBy     String?
+  reviewedBy     String?   // Firebase UID of reviewing pharmacist
   reviewedAt     DateTime?
   reviewNotes    String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
   order          Order?
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDER
+// ─────────────────────────────────────────────────────────────────────────────
+
 model Order {
-  id                 String        @id @default(cuid())
+  id                 String         @id @default(cuid())
   tenantId           String
-  pharmacyId         String
-  pharmacy           Pharmacy      @relation(fields: [pharmacyId], references: [id])
+  branchId           String
+  branch             PharmacyBranch @relation(fields: [branchId], references: [id])
   customerId         String
-  customer           User          @relation(fields: [customerId], references: [id])
-  prescriptionId     String?       @unique
-  prescription       Prescription? @relation(fields: [prescriptionId], references: [id])
+  customer           User           @relation(fields: [customerId], references: [id])
+  prescriptionId     String?        @unique
+  prescription       Prescription?  @relation(fields: [prescriptionId], references: [id])
   status             String
-  subtotal           Decimal       @db.Decimal(10, 2)
-  deliveryFee        Decimal       @db.Decimal(10, 2) @default(0)
-  total              Decimal       @db.Decimal(10, 2)
-  currency           String        @default("LKR")
+  subtotal           Decimal        @db.Decimal(10, 2)
+  deliveryFee        Decimal        @default(0) @db.Decimal(10, 2)
+  total              Decimal        @db.Decimal(10, 2)
+  currency           String         @default("LKR")
   deliveryAddress    Json?
   deliveryProvider   String?
   deliveryTrackingId String?
   deliveryStatus     String?
-  paymentId          String?       @unique
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  items              OrderItem[]
-  payment            Payment?
+  paymentId          String?        @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  items   OrderItem[]
+  payment Payment?
 }
 
 model OrderItem {
@@ -138,6 +257,10 @@ model OrderItem {
   total        Decimal  @db.Decimal(10, 2)
   createdAt    DateTime @default(now())
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Payment {
   id                String    @id @default(cuid())
@@ -155,4 +278,154 @@ model Payment {
   metadata          Json?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERMISSION SYSTEM
+//
+// UserTypePermission  — default permissions per role (seeded)
+// UserPermissionOverride — per-user overrides (optional; future-proof)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ScreenPermission {
+  id               String               @id @default(cuid())
+  permissionCode   String               @unique
+  screenName       String
+  description      String?
+  createdAt        DateTime             @default(now())
+
+  userTypeMappings UserTypePermission[]
+  userOverrides    UserPermissionOverride[]
+}
+
+model UserTypePermission {
+  id           String           @id @default(cuid())
+  // system_admin | pharmacy_admin | pharmacy_staff | customer
+  userTypeCode String
+  permissionId String
+  permission   ScreenPermission @relation(fields: [permissionId], references: [id])
+  isEnabled    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([userTypeCode, permissionId])
+}
+
+// Per-user permission override — allows granting or revoking
+// specific permissions for a single user without changing the role defaults.
+model UserPermissionOverride {
+  id           String           @id @default(cuid())
+  userId       String
+  permissionId String
+  permission   ScreenPermission @relation(fields: [permissionId], references: [id])
+  isGranted    Boolean          // true = force-grant, false = force-revoke
+  grantedBy    String?          // Firebase UID of admin who set this
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([userId, permissionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG  — healthcare compliance; append-only
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorUid   String   // Firebase UID of who performed the action
+  actorRole  String
+  tenantId   String?
+  branchId   String?
+  action     String   // USER_CREATED | BRANCH_CREATED | PERMISSION_CHANGED | etc.
+  entityType String   // User | Tenant | PharmacyBranch | Permission
+  entityId   String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISEASE TRACKING  (from ER diagram)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DiseaseDetail {
+  id          String               @id @default(cuid())
+  diseaseCode String               @unique
+  diseaseName String
+
+  users       DiseaseUserMapping[]
+}
+
+model DiseaseUserMapping {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  diseaseId String
+  disease   DiseaseDetail @relation(fields: [diseaseId], references: [id])
+  createdAt DateTime      @default(now())
+
+  @@unique([userId, diseaseId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT OWNER  — the pharmacist or company director who legally owns the tenant
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantOwner {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fullName     String
+  nic          String?  // National Identity Card No
+  phone        String?
+  email        String?
+  slmcRegNo    String?  // Sri Lanka Medical Council registration
+  qualification String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  district     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT CONTACTS  — additional contacts (accountant, manager, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantContact {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contactType String   // primary | billing | technical | emergency
+  name        String
+  designation String?
+  phone       String?
+  email       String?
+  isPrimary   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TENANT DOCUMENTS  — license scans, certificates, registrations
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TenantDocument {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documentType String    // business_registration | pharmacy_license | nmra_certificate | tax_certificate | insurance | other
+  title        String
+  fileUrl      String    // S3 URL
+  fileSize     Int?      // bytes
+  mimeType     String?
+  expiryDate   DateTime?
+  notes        String?
+  uploadedBy   String?   // Firebase UID
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }

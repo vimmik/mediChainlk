@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, browserSessionPersistence, setPersistence } from 'firebase/auth';
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -59,6 +59,15 @@ export function getFirebaseAuth(): Auth | null {
   }
 
   auth = getAuth(firebaseApp);
+
+  // Use session-only persistence: token cleared when tab/browser closes.
+  // Reduces exposure window compared to default indexedDB/localStorage persistence.
+  // This is fire-and-forget — setPersistence returns a promise but the auth instance
+  // is usable immediately with the default and switches atomically.
+  setPersistence(auth, browserSessionPersistence).catch((err) => {
+    console.warn('Failed to set Firebase session persistence:', err);
+  });
+
   return auth;
 }
 

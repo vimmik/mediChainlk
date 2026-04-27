@@ -15,7 +15,7 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Post('invoice')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
+  @Roles('pharmacy_staff', 'pharmacy_admin')
   createInvoice(@Body() dto: CreateInvoiceDto, @CurrentTenant() tenantId: string) {
     return this.billingService.createInvoice(dto, tenantId);
   }

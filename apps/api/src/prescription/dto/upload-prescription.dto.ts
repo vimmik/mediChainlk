@@ -10,7 +10,7 @@ export class UploadPrescriptionDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  pharmacyId!: string;
+  branchId!: string;
 
   @ApiProperty({ description: 'S3 key of the uploaded prescription image' })
   @IsString()
