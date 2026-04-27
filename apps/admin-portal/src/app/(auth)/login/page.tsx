@@ -116,25 +116,26 @@ function LoginForm() {
       return;
     }
 
-    try {
-      const verifyRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/recaptcha/verify`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: recaptchaToken, action: 'admin_login' }),
-        },
-      );
-      if (!verifyRes.ok) {
-        setLoaderStage(null);
-        setServerError('Bot verification failed. Please try again.');
-        return;
-      }
-    } catch {
-      setLoaderStage(null);
-      setServerError('Could not reach verification server. Check your connection.');
-      return;
-    }
+    // TODO: re-enable recaptcha verify once RECAPTCHA_ALLOWED_HOSTNAMES is set for production domain
+    // try {
+    //   const verifyRes = await fetch(
+    //     `${process.env.NEXT_PUBLIC_API_URL}/auth/recaptcha/verify`,
+    //     {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ token: recaptchaToken, action: 'admin_login' }),
+    //     },
+    //   );
+    //   if (!verifyRes.ok) {
+    //     setLoaderStage(null);
+    //     setServerError('Bot verification failed. Please try again.');
+    //     return;
+    //   }
+    // } catch {
+    //   setLoaderStage(null);
+    //   setServerError('Could not reach verification server. Check your connection.');
+    //   return;
+    // }
 
     const auth = getFirebaseAuth();
     if (!auth) {
