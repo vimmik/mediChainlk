@@ -36,7 +36,7 @@ export class CreateInvoiceDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  pharmacyId!: string;
+  branchId!: string;
 
   @ApiProperty()
   @IsString()

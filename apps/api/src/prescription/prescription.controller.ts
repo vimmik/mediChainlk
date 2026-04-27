@@ -22,19 +22,19 @@ export class PrescriptionController {
   }
 
   @Post(':id/trigger-ocr')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
+  @Roles('pharmacy_staff', 'pharmacy_admin')
   triggerOcr(@Param('id') id: string) {
     return this.prescriptionService.triggerOcr(id);
   }
 
   @Get('review-queue')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
-  getReviewQueue(@CurrentTenant() tenantId: string, @Query('pharmacyId') pharmacyId: string) {
-    return this.prescriptionService.getPendingReviewQueue(tenantId, pharmacyId);
+  @Roles('pharmacy_staff', 'pharmacy_admin')
+  getReviewQueue(@CurrentTenant() tenantId: string, @Query('branchId') branchId: string) {
+    return this.prescriptionService.getPendingReviewQueue(tenantId, branchId);
   }
 
   @Patch(':id/review')
-  @Roles('pharmacy_staff', 'pharmacy_owner')
+  @Roles('pharmacy_staff', 'pharmacy_admin')
   review(
     @Param('id') id: string,
     @Body() dto: ReviewPrescriptionDto,

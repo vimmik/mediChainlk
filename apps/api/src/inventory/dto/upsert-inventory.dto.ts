@@ -5,7 +5,7 @@ export class UpsertInventoryDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  pharmacyId!: string;
+  branchId!: string;
 
   @ApiProperty()
   @IsString()

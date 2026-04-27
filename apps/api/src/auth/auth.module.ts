@@ -3,8 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { RedisModule } from '../redis/redis.module';
+import { RecaptchaController } from './recaptcha.controller';
+import { SessionController } from './session.controller';
 
 @Module({
+  imports: [RedisModule],
+  controllers: [RecaptchaController, SessionController],
   providers: [FirebaseAuthGuard, RolesGuard],
   exports: [FirebaseAuthGuard, RolesGuard],
 })

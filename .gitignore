@@ -68,3 +68,4 @@ apps/customer-app/ios/
 # Logs
 *.log
 npm-debug.log*
+firebase-service-account.json

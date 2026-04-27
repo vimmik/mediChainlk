@@ -12,6 +12,7 @@ npm run dev
 npm run dev --workspace=apps/api          # NestJS API on :3001
 npm run dev --workspace=apps/admin-portal  # Admin portal on :3002
 npm run dev --workspace=apps/pharmacy-portal # Pharmacy portal on :3003
+npm run dev --workspace=apps/demo         # Demo webapp on :3010
 cd apps/ai-service && uvicorn app.main:app --reload  # FastAPI on :8000
 cd apps/customer-app && npx expo start    # Expo on :8081
 
@@ -22,6 +23,10 @@ npm run db:studio     # Open Prisma Studio GUI
 
 # Local infrastructure
 docker-compose up -d  # Start PostgreSQL :5432 + Redis :6379
+
+# Lint & format
+npm run lint          # Lint all workspaces via Turbo
+npm run format        # Prettier-format all TS/JS/JSON/MD files
 
 # Testing
 npm run test                              # All workspaces via Turbo
@@ -38,6 +43,7 @@ apps/
   api/               # NestJS 11 — modular monolith, port 3001
   admin-portal/      # Next.js 15 — system admin, port 3002
   pharmacy-portal/   # Next.js 15 — pharmacy staff, port 3003
+  demo/              # Next.js 15 — standalone demo webapp, port 3010 (no backend)
   customer-app/      # React Native (Expo SDK 52), port 8081
   ai-service/        # FastAPI (Python 3.12), port 8000
 packages/
@@ -80,6 +86,17 @@ Pipeline: `S3 download → OpenCV preprocess → Google Cloud Vision OCR → Med
 - Confidence tiers: `HIGH ≥ 0.90` (auto-accept), `MEDIUM 0.70–0.90` (pharmacist review), `LOW < 0.70` (reject)
 - High-alert medicines (insulin, warfarin) always route to pharmacist regardless of confidence
 - Install Med7 model manually: `python -m spacy download en_core_med7_lg`
+
+## Demo Webapp (`apps/demo`)
+
+Standalone Next.js 15 app — **no backend, no Firebase, no external APIs**. All state lives in Zustand (persisted to `localStorage` under key `medichainlk-demo`).
+
+- **Role switcher** — sidebar lets you view as `system_admin`, `pharmacy_staff`, or `customer`; nav items filter by role
+- **Mock data** — all seed data is in [src/lib/mock-data.ts](apps/demo/src/lib/mock-data.ts); never replace it with API calls
+- **State** — [src/store/demo-store.ts](apps/demo/src/store/demo-store.ts) holds prescription reviews, inventory adjustments, order status progression, GRN/item-request approvals, and permission toggles; all persisted across page reloads
+- **Shell** — [src/components/layout/DemoShell.tsx](apps/demo/src/components/layout/DemoShell.tsx) is the single layout with sidebar, header, notifications, and dark-mode toggle
+- **Hydration guard** — use `useHasHydrated()` from the store before reading persisted Zustand values to avoid SSR/client mismatch
+- Does **not** share `@medichainlk/*` packages; uses its own Radix UI + Tailwind CSS v4 + Recharts stack
 
 ## Key Architectural Patterns
 
