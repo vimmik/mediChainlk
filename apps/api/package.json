@@ -19,6 +19,8 @@
   "dependencies": {
     "@medichainlk/shared-types": "*",
     "@neondatabase/serverless": "^1.0.2",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
     "@nestjs/bull": "^11.0.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
@@ -51,8 +53,6 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.0",
-    "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^22.0.0",
