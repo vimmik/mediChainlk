@@ -343,7 +343,7 @@ export default function LoginPage() {
 
               {/* Tagline */}
               <p className="text-[0.9375rem] text-slate-400 mb-10 max-w-85 leading-relaxed">
-                Sri Lanka's advanced pharmacy management platform — secure, multi-tenant, and AI-powered.
+                Sri Lanka&apos;s advanced pharmacy management platform — secure, multi-tenant, and AI-powered.
               </p>
 
               {/* Feature list */}

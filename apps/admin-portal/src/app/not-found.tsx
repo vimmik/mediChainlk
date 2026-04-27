@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@medichainlk/ui';
+import Link from 'next/link';
 
 /**
  * Custom 404. Intentionally sparse — we don't want to reveal neighbouring
@@ -19,7 +19,7 @@ export default function NotFound() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            The page you're looking for doesn't exist, or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist, or has been moved.
           </p>
 
           <div className="flex gap-2 pt-2">

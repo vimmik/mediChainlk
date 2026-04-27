@@ -4,23 +4,23 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DetailSkeleton } from '@/components/shared/TableSkeleton';
 import {
-  useAssignBranchUser,
-  useBranch,
-  useRemoveBranchUser,
-  useTenant,
-  type BranchStaffMember,
+    useAssignBranchUser,
+    useBranch,
+    useRemoveBranchUser,
+    useTenant,
+    type BranchStaffMember,
 } from '@/hooks/useTenants';
 import { useUsers, type User } from '@/hooks/useUsers';
 import { Button } from '@medichainlk/ui';
 import {
-  ArrowLeft,
-  Calendar,
-  Search,
-  Star,
-  UserCheck,
-  UserMinus,
-  UserPlus,
-  Users,
+    ArrowLeft,
+    Calendar,
+    Search,
+    Star,
+    UserCheck,
+    UserMinus,
+    UserPlus,
+    Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -202,8 +202,8 @@ export default function AssignStaffPage() {
 
   const [search, setSearch] = useState('');
 
-  const allStaff = staffData?.data ?? [];
-  const assignedStaff = branch?.staff ?? [];
+  const allStaff = useMemo(() => staffData?.data ?? [], [staffData?.data]);
+  const assignedStaff = useMemo(() => branch?.staff ?? [], [branch?.staff]);
 
   // Assigned user IDs for fast lookup
   const assignedIds = useMemo(

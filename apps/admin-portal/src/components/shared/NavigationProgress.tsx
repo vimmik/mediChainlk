@@ -71,7 +71,6 @@ export function NavigationProgress() {
     }, 380);
 
     return clearTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   if (!visible) return null;
