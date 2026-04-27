@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
-import { Button, Badge } from '@medichainlk/ui';
+import { Button } from '@medichainlk/ui';
 import { useUsers, type User } from '@/hooks/useUsers';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';

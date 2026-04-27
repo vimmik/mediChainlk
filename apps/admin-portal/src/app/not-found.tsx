@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@medichainlk/ui';
+import Link from 'next/link';
 
 /**
  * Custom 404. Intentionally sparse — we don't want to reveal neighbouring

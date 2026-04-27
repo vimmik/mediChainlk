@@ -202,8 +202,8 @@ export default function AssignStaffPage() {
 
   const [search, setSearch] = useState('');
 
-  const allStaff = staffData?.data ?? [];
-  const assignedStaff = branch?.staff ?? [];
+  const allStaff = useMemo(() => staffData?.data ?? [], [staffData?.data]);
+  const assignedStaff = useMemo(() => branch?.staff ?? [], [branch?.staff]);
 
   // Assigned user IDs for fast lookup
   const assignedIds = useMemo(

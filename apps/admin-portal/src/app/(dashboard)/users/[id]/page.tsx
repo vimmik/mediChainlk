@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Badge } from '@medichainlk/ui';
+import { Button } from '@medichainlk/ui';
 import { useUser } from '@/hooks/useUsers';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';
 import { Pencil, MapPin, Building2, Star } from 'lucide-react';
