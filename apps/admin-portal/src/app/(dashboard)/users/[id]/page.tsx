@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@medichainlk/ui';
-import { useUser } from '@/hooks/useUsers';
-import { EditUserDrawer } from '@/components/users/EditUserDrawer';
-import { Pencil, MapPin, Building2, Star } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DetailSkeleton } from '@/components/shared/TableSkeleton';
+import { EditUserDrawer } from '@/components/users/EditUserDrawer';
+import { useUser } from '@/hooks/useUsers';
+import { Button } from '@medichainlk/ui';
+import { Building2, MapPin, Pencil, Star } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   system_admin:   { bg: 'bg-blue-500/10',   text: 'text-blue-600 dark:text-blue-400',   label: 'System Admin' },

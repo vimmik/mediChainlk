@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useDebounce } from 'use-debounce';
-import { Button } from '@medichainlk/ui';
-import { useUsers, type User } from '@/hooks/useUsers';
-import { InviteUserModal } from '@/components/users/InviteUserModal';
-import { EditUserDrawer } from '@/components/users/EditUserDrawer';
-import { useDeactivateUser, useReactivateUser } from '@/hooks/useUsers';
-import Link from 'next/link';
-import { Search, UserPlus, ChevronLeft, ChevronRight, Eye, Pencil, UserX, UserCheck, Users } from 'lucide-react';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
-import { EmptyState } from '@/components/shared/EmptyState';
 import { TopProgressBar } from '@/components/shared/TopProgressBar';
+import { EditUserDrawer } from '@/components/users/EditUserDrawer';
+import { InviteUserModal } from '@/components/users/InviteUserModal';
+import { useDeactivateUser, useReactivateUser, useUsers, type User } from '@/hooks/useUsers';
+import { Button } from '@medichainlk/ui';
+import { ChevronLeft, ChevronRight, Eye, Pencil, Search, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
+import Link from 'next/link';
+import { useCallback, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 
 const ROLE_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   system_admin:    { label: 'System Admin',    variant: 'default' },
