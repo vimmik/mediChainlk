@@ -19,7 +19,7 @@
  * Data safety:
  *   `ALTER TABLE ... SET SCHEMA` RELOCATES a table — it keeps every row, index,
  *   constraint and FK intact. It is NOT a copy/drop. Cross-schema FKs are fully
- *   supported by Postgres, so existing relationships keep working.
+ *   supported by Postgres, so existing relationships keep working...
  *
  * Idempotent:
  *   - CREATE SCHEMA IF NOT EXISTS
