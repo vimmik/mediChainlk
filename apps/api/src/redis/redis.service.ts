@@ -53,6 +53,7 @@ export class RedisService implements OnModuleDestroy {
       permissions: string[];
       email?: string;
       permVersion?: number;
+      userPermVersion?: number;
     },
     ttlSeconds = 8 * 3600,
   ): Promise<void> {
@@ -74,6 +75,7 @@ export class RedisService implements OnModuleDestroy {
     email?: string;
     createdAt: number;
     permVersion?: number;
+    userPermVersion?: number;
   } | null> {
     const raw = await this.client.get(`session:${sessionId}`);
     if (!raw) return null;
@@ -105,6 +107,20 @@ export class RedisService implements OnModuleDestroy {
 
   async getRolePermissionVersion(role: string): Promise<number> {
     const v = await this.client.get(`role_perm_ver:${role}`);
+    return v ? parseInt(v, 10) : 0;
+  }
+
+  // ─── Per-user permission versioning ─────────────────────────────────────
+  // When a single user's permission overrides change, bump THEIR version.
+  // The session resolver re-resolves perms for that user on their next request,
+  // independent of the role-wide version. Keyed by Firebase UID.
+
+  async bumpUserPermissionVersion(firebaseUid: string): Promise<number> {
+    return this.client.incr(`user_perm_ver:${firebaseUid}`);
+  }
+
+  async getUserPermissionVersion(firebaseUid: string): Promise<number> {
+    const v = await this.client.get(`user_perm_ver:${firebaseUid}`);
     return v ? parseInt(v, 10) : 0;
   }
 

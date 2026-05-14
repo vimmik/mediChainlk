@@ -16,6 +16,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { NotificationModule } from './notification/notification.module';
 import { TenantModule } from './tenant/tenant.module';
 import { UserModule } from './user/user.module';
+import { RoleModule } from './role/role.module';
 import { HealthModule } from './health/health.module';
 import { PermissionsModule } from './permissions/permissions.module';
 
@@ -47,6 +48,7 @@ import { PermissionsModule } from './permissions/permissions.module';
     NotificationModule,
     TenantModule,
     UserModule,
+    RoleModule,
     HealthModule,
     PermissionsModule,
   ],

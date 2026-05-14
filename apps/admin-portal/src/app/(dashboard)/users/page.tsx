@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { TableSkeleton } from '@/components/shared/TableSkeleton';
 import { TopProgressBar } from '@/components/shared/TopProgressBar';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';
-import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { useDeactivateUser, useReactivateUser, useUsers, type User } from '@/hooks/useUsers';
 import { Button } from '@medichainlk/ui';
 import { ChevronLeft, ChevronRight, Eye, Pencil, Search, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
@@ -28,7 +27,6 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function UsersPage() {
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebounce(search, 400);
@@ -62,13 +60,12 @@ export default function UsersPage() {
         title="Users"
         description={`${total > 0 ? `${total} total users` : 'Manage all platform users'}`}
         action={
-          <Button
-            onClick={() => setInviteOpen(true)}
-            className="gap-2 glow-blue rounded-xl"
-          >
-            <UserPlus className="w-4 h-4" />
-            Invite User
-          </Button>
+          <Link href="/users/new">
+            <Button className="gap-2 glow-blue rounded-xl">
+              <UserPlus className="w-4 h-4" />
+              New User
+            </Button>
+          </Link>
         }
       />
 
@@ -261,7 +258,6 @@ export default function UsersPage() {
       )}
 
       {/* Modals */}
-      <InviteUserModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <EditUserDrawer user={editUser} open={!!editUser} onClose={() => setEditUser(null)} />
     </div>
   );

@@ -45,6 +45,7 @@ model Tenant {
   owner       TenantOwner?
   contacts    TenantContact[]
   documents   TenantDocument[]
+  roles       Role[]           // custom roles owned by this tenant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,8 +123,15 @@ model User {
   firstName    String?
   lastName     String?
 
-  // system_admin | pharmacy_admin | pharmacy_staff | customer
+  // SCOPE classifier — drives multi-tenancy guards.
+  // Values: system_admin | pharmacy_admin | pharmacy_staff | customer
   role         String
+
+  // PERMISSION bundle — optional FK to a Role row (custom or system).
+  // When null, the user falls back to DEFAULT_PERMISSIONS for their `role`.
+  // The Role.scope must be compatible with the user's `role` string.
+  roleId       String?
+  roleRef      Role?    @relation(fields: [roleId], references: [id])
 
   tenantId     String?
   tenant       Tenant?  @relation(fields: [tenantId], references: [id])
@@ -292,10 +300,65 @@ model ScreenPermission {
   permissionCode   String               @unique
   screenName       String
   description      String?
+  category         String?              // group permissions in the UI (e.g. "Inventory", "Billing")
   createdAt        DateTime             @default(now())
 
   userTypeMappings UserTypePermission[]
   userOverrides    UserPermissionOverride[]
+  rolePermissions  RolePermission[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROLE  — a named bundle of ScreenPermissions assigned to users.
+//
+// Two flavours:
+//   • System roles (isSystem=true, tenantId=null) — seeded:
+//     system_admin, pharmacy_admin, pharmacy_staff, customer.
+//     Cannot be deleted; permissions can be edited only by system_admin.
+//   • Tenant roles (isSystem=false, tenantId set) — created by pharmacy_admin
+//     for their own staff. e.g. "Cashier", "Pharmacist", "Inventory Manager".
+//
+// `scope` constrains which user role-strings can hold this Role:
+//   system  → user.role must be system_admin
+//   tenant  → user.role must be pharmacy_admin
+//   branch  → user.role must be pharmacy_staff
+//   customer→ user.role must be customer
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  // system | tenant | branch | customer
+  scope       String
+  isSystem    Boolean  @default(false)
+  // null for system roles; set for tenant-owned custom roles
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive    Boolean  @default(true)
+  createdBy   String?  // Firebase UID of admin who created the role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+
+  // Names are unique per tenant scope; system roles share the global namespace (tenantId IS NULL)
+  @@unique([tenantId, name])
+  @@index([scope])
+  @@index([tenantId])
+}
+
+// Join table: which ScreenPermissions are granted by a Role.
+model RolePermission {
+  id           String           @id @default(cuid())
+  roleId       String
+  role         Role             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   ScreenPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+
+  @@unique([roleId, permissionId])
 }
 
 model UserTypePermission {

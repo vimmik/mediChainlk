@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
+  Shield,
   ShieldCheck,
   ShoppingCart,
   Stethoscope,
@@ -32,6 +33,7 @@ const SYSTEM_ADMIN_NAV: NavItem[] = [
   { href: '/dashboard',   label: 'Dashboard',   permission: 'DASHBOARD_VIEW',  icon: LayoutDashboard },
   { href: '/tenants',     label: 'Pharmacies',  permission: 'PHARMACY_MANAGE', icon: Building2 },
   { href: '/users',       label: 'Users',       permission: 'USER_MANAGE',     icon: Users },
+  { href: '/roles',       label: 'Roles',       permission: 'ROLE_MANAGE',     icon: Shield },
   { href: '/permissions', label: 'Permissions', permission: 'USER_MANAGE',     icon: ShieldCheck },
   { href: '/monitoring',  label: 'Monitoring',  permission: null,              icon: Activity },
 ];
@@ -39,6 +41,7 @@ const SYSTEM_ADMIN_NAV: NavItem[] = [
 const PHARMACY_ADMIN_NAV: NavItem[] = [
   { href: '/dashboard',    label: 'Dashboard',   permission: 'DASHBOARD_VIEW',  icon: LayoutDashboard },
   { href: '/users',        label: 'Staff',       permission: 'USER_MANAGE',     icon: Users },
+  { href: '/roles',        label: 'Roles',       permission: 'ROLE_MANAGE',     icon: Shield },
   { href: '/inventory',    label: 'Inventory',   permission: 'INVENTORY_VIEW',  icon: Package },
   { href: '/orders',       label: 'Orders',      permission: 'ORDER_VIEW',      icon: ShoppingCart },
   { href: '/prescriptions',label: 'Prescriptions',permission: 'PRESCRIPTION_VIEW', icon: ClipboardList },
