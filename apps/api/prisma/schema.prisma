@@ -1,12 +1,14 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  previewFeatures = ["driverAdapters", "multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  // Domain-organised schemas — nothing lives in `public` anymore.
+  schemas   = ["identity", "catalog", "ops", "billing", "audit"]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,6 +47,9 @@ model Tenant {
   owner       TenantOwner?
   contacts    TenantContact[]
   documents   TenantDocument[]
+  roles       Role[]           // custom roles owned by this tenant
+
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +88,8 @@ model PharmacyBranch {
   staff     UserBranchAssignment[]
   inventory InventoryItem[]
   orders    Order[]
+
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,6 +109,7 @@ model UserBranchAssignment {
   assignedAt DateTime       @default(now())
 
   @@unique([userId, branchId])
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,8 +130,15 @@ model User {
   firstName    String?
   lastName     String?
 
-  // system_admin | pharmacy_admin | pharmacy_staff | customer
+  // SCOPE classifier — drives multi-tenancy guards.
+  // Values: system_admin | pharmacy_admin | pharmacy_staff | customer
   role         String
+
+  // PERMISSION bundle — optional FK to a Role row (custom or system).
+  // When null, the user falls back to DEFAULT_PERMISSIONS for their `role`.
+  // The Role.scope must be compatible with the user's `role` string.
+  roleId       String?
+  roleRef      Role?    @relation(fields: [roleId], references: [id])
 
   tenantId     String?
   tenant       Tenant?  @relation(fields: [tenantId], references: [id])
@@ -149,6 +164,8 @@ model User {
   orders            Order[]
   prescriptions     Prescription[]
   diseases          DiseaseUserMapping[]
+
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -169,6 +186,8 @@ model Medicine {
   updatedAt      DateTime        @updatedAt
 
   inventoryItems InventoryItem[]
+
+  @@schema("catalog")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,6 +208,8 @@ model InventoryItem {
   unitPrice      Decimal        @db.Decimal(10, 2)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@schema("ops")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,6 +234,8 @@ model Prescription {
   updatedAt      DateTime  @updatedAt
 
   order          Order?
+
+  @@schema("ops")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,6 +266,8 @@ model Order {
 
   items   OrderItem[]
   payment Payment?
+
+  @@schema("ops")
 }
 
 model OrderItem {
@@ -256,6 +281,8 @@ model OrderItem {
   unitPrice    Decimal  @db.Decimal(10, 2)
   total        Decimal  @db.Decimal(10, 2)
   createdAt    DateTime @default(now())
+
+  @@schema("ops")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -278,6 +305,8 @@ model Payment {
   metadata          Json?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+
+  @@schema("billing")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -292,10 +321,113 @@ model ScreenPermission {
   permissionCode   String               @unique
   screenName       String
   description      String?
+  category         String?              // group permissions in the UI (e.g. "Inventory", "Billing")
   createdAt        DateTime             @default(now())
 
   userTypeMappings UserTypePermission[]
   userOverrides    UserPermissionOverride[]
+  rolePermissions  RolePermission[]
+  menuItems        MenuItem[]
+
+  @@schema("identity")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MENU ITEM  — the navigable menu tree.
+//
+// Exactly two levels of nesting, then a screen:
+//   parent  → e.g. "Inventory"            (top-level group; no permission, no route)
+//   child   → e.g. "Stock Management"      (sub-group under a parent; no permission, no route)
+//   screen  → e.g. "Goods Receive Note"    (leaf; has a route + links to a ScreenPermission)
+//
+// Visibility rule (resolved in /me/menu):
+//   • A `screen` is visible if the user holds its linked permission.
+//   • A `child`/`parent` is visible only if it has at least one visible descendant
+//     screen — empty branches are pruned from the sidebar.
+//
+// Menu items are PLATFORM-WIDE (no tenantId). What a user sees is driven entirely
+// by their resolved permissions, not by tenant ownership.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  // parent | child | screen
+  type         String
+  label        String
+  icon         String?  // lucide-react icon name, used by parent/child for the sidebar
+  // Self-referencing tree. parent → null; child → a parent's id; screen → a child's id.
+  parentId     String?
+  parent       MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     MenuItem[] @relation("MenuTree")
+  // Route is only meaningful for `screen` rows (e.g. "/inventory/grn").
+  route        String?
+  // Permission gate — only `screen` rows carry this. Null for parent/child.
+  permissionId String?
+  permission   ScreenPermission? @relation(fields: [permissionId], references: [id], onDelete: SetNull)
+  // Ordering within the same parent.
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([type])
+  @@schema("identity")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROLE  — a named bundle of ScreenPermissions assigned to users.
+//
+// Two flavours:
+//   • System roles (isSystem=true, tenantId=null) — seeded:
+//     system_admin, pharmacy_admin, pharmacy_staff, customer.
+//     Cannot be deleted; permissions can be edited only by system_admin.
+//   • Tenant roles (isSystem=false, tenantId set) — created by pharmacy_admin
+//     for their own staff. e.g. "Cashier", "Pharmacist", "Inventory Manager".
+//
+// `scope` constrains which user role-strings can hold this Role:
+//   system  → user.role must be system_admin
+//   tenant  → user.role must be pharmacy_admin
+//   branch  → user.role must be pharmacy_staff
+//   customer→ user.role must be customer
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  // system | tenant | branch | customer
+  scope       String
+  isSystem    Boolean  @default(false)
+  // null for system roles; set for tenant-owned custom roles
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive    Boolean  @default(true)
+  createdBy   String?  // Firebase UID of admin who created the role
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       User[]
+
+  // Names are unique per tenant scope; system roles share the global namespace (tenantId IS NULL)
+  @@unique([tenantId, name])
+  @@index([scope])
+  @@index([tenantId])
+  @@schema("identity")
+}
+
+// Join table: which ScreenPermissions are granted by a Role.
+model RolePermission {
+  id           String           @id @default(cuid())
+  roleId       String
+  role         Role             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   ScreenPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+
+  @@unique([roleId, permissionId])
+  @@schema("identity")
 }
 
 model UserTypePermission {
@@ -309,6 +441,7 @@ model UserTypePermission {
   updatedAt    DateTime         @updatedAt
 
   @@unique([userTypeCode, permissionId])
+  @@schema("identity")
 }
 
 // Per-user permission override — allows granting or revoking
@@ -324,6 +457,7 @@ model UserPermissionOverride {
   updatedAt    DateTime         @updatedAt
 
   @@unique([userId, permissionId])
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -343,6 +477,8 @@ model AuditLog {
   after      Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
+
+  @@schema("audit")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,6 +491,8 @@ model DiseaseDetail {
   diseaseName String
 
   users       DiseaseUserMapping[]
+
+  @@schema("ops")
 }
 
 model DiseaseUserMapping {
@@ -366,6 +504,7 @@ model DiseaseUserMapping {
   createdAt DateTime      @default(now())
 
   @@unique([userId, diseaseId])
+  @@schema("ops")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -388,6 +527,8 @@ model TenantOwner {
   district     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -407,6 +548,8 @@ model TenantContact {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@schema("identity")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -428,4 +571,6 @@ model TenantDocument {
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@schema("identity")
 }

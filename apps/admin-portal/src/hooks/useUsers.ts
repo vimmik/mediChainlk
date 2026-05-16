@@ -56,6 +56,24 @@ export interface InviteUserPayload {
   tenantId?: string;
 }
 
+export interface ProvisionBranchAssignment {
+  branchId: string;
+  isPrimary?: boolean;
+}
+
+export interface ProvisionUserPayload {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  role: 'system_admin' | 'pharmacy_admin' | 'pharmacy_staff' | 'customer';
+  roleId?: string;
+  tenantId?: string;
+  branchAssignments?: ProvisionBranchAssignment[];
+  sendPasswordReset?: boolean;
+}
+
 export interface UpdateUserPayload {
   firstName?: string;
   lastName?: string;
@@ -99,6 +117,22 @@ export function useInviteUser() {
       toast.success('User invited successfully');
     },
     onError: () => toast.error('Failed to invite user'),
+  });
+}
+
+/**
+ * Provision a user with full atomic guarantees:
+ * Firebase account + DB row + branch assignments in a single transaction.
+ * Callers handle errors inline via mutateAsync — no generic onError toast.
+ */
+export function useProvisionUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ProvisionUserPayload) =>
+      api.post('/users/provision', payload).then((r) => r.data?.data ?? r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] });
+    },
   });
 }
 

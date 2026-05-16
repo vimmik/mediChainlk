@@ -24,11 +24,15 @@ import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case'
 import { GetUserUseCase } from './application/use-cases/get-user.use-case';
 import { InviteUserUseCase } from './application/use-cases/invite-user.use-case';
 import { ListUsersUseCase } from './application/use-cases/list-users.use-case';
+import { ProvisionUserUseCase } from './application/use-cases/provision-user.use-case';
 import { UpdateUserUseCase } from './application/use-cases/update-user.use-case';
+import { UserPermissionsUseCase } from './application/use-cases/user-permissions.use-case';
 import { UserStatusUseCase } from './application/use-cases/user-status.use-case';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { ProvisionUserDto } from './dto/provision-user.dto';
+import { ReplaceUserOverridesDto } from './dto/replace-user-overrides.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 interface AuthRequest {
@@ -45,7 +49,9 @@ export class UserController {
     private readonly getUser: GetUserUseCase,
     private readonly createUser: CreateUserUseCase,
     private readonly inviteUser: InviteUserUseCase,
+    private readonly provisionUserUseCase: ProvisionUserUseCase,
     private readonly updateUser: UpdateUserUseCase,
+    private readonly userPermissions: UserPermissionsUseCase,
     private readonly userStatus: UserStatusUseCase,
     private readonly deleteUser: DeleteUserUseCase,
   ) {}
@@ -79,11 +85,49 @@ export class UserController {
     return this.inviteUser.execute(dto, req.user);
   }
 
+  @Post('provision')
+  @Roles('system_admin', 'pharmacy_admin')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({
+    summary:
+      'Atomically provision a user: Firebase account + DB row + branch assignments in one transaction (with compensation on failure)',
+  })
+  provision(@Body() dto: ProvisionUserDto, @Request() req: AuthRequest) {
+    return this.provisionUserUseCase.execute(dto, req.user);
+  }
+
   @Put(':id')
   @Roles('system_admin', 'pharmacy_admin')
   @ApiOperation({ summary: 'Update user profile and/or role' })
   update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Request() req: AuthRequest) {
     return this.updateUser.execute(id, dto, req.user);
+  }
+
+  // ─── Per-user permission overrides ────────────────────────────────────────
+
+  @Get(':id/effective-permissions')
+  @Roles('system_admin', 'pharmacy_admin')
+  @ApiOperation({
+    summary:
+      'List every ScreenPermission with its effective state for this user (role-derived + overrides)',
+  })
+  effectivePermissions(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.userPermissions.getEffective(id, req.user);
+  }
+
+  @Put(':id/permission-overrides')
+  @Roles('system_admin', 'pharmacy_admin')
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({
+    summary:
+      'Bulk-replace this user\'s permission overrides. Triggers a perm-version bump so active sessions re-resolve on next request.',
+  })
+  replaceOverrides(
+    @Param('id') id: string,
+    @Body() dto: ReplaceUserOverridesDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.userPermissions.replaceOverrides(id, dto, req.user);
   }
 
   @Patch(':id/deactivate')

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMyMenu, type MenuChildNode, type MenuParentNode } from '@/hooks/useMenu';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@medichainlk/ui';
@@ -8,11 +9,15 @@ import {
   Activity,
   BarChart3,
   Building2,
-  ChevronRight,
+  ChevronDown,
   ClipboardList,
+  CreditCard,
   LayoutDashboard,
   LogOut,
+  Menu as MenuIcon,
   Package,
+  Pill,
+  Shield,
   ShieldCheck,
   ShoppingCart,
   Stethoscope,
@@ -20,30 +25,27 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
-interface NavItem {
-  href: string;
-  label: string;
-  permission: string | null;
-  icon: React.ComponentType<{ className?: string }>;
+// Map the icon-name strings stored in the DB to lucide components.
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Shield,
+  ShieldCheck,
+  Package,
+  Pill,
+  ClipboardList,
+  ShoppingCart,
+  CreditCard,
+  BarChart3,
+  Activity,
+};
+
+function iconFor(name: string | null): React.ComponentType<{ className?: string }> {
+  return (name && ICON_MAP[name]) || MenuIcon;
 }
-
-const SYSTEM_ADMIN_NAV: NavItem[] = [
-  { href: '/dashboard',   label: 'Dashboard',   permission: 'DASHBOARD_VIEW',  icon: LayoutDashboard },
-  { href: '/tenants',     label: 'Pharmacies',  permission: 'PHARMACY_MANAGE', icon: Building2 },
-  { href: '/users',       label: 'Users',       permission: 'USER_MANAGE',     icon: Users },
-  { href: '/permissions', label: 'Permissions', permission: 'USER_MANAGE',     icon: ShieldCheck },
-  { href: '/monitoring',  label: 'Monitoring',  permission: null,              icon: Activity },
-];
-
-const PHARMACY_ADMIN_NAV: NavItem[] = [
-  { href: '/dashboard',    label: 'Dashboard',   permission: 'DASHBOARD_VIEW',  icon: LayoutDashboard },
-  { href: '/users',        label: 'Staff',       permission: 'USER_MANAGE',     icon: Users },
-  { href: '/inventory',    label: 'Inventory',   permission: 'INVENTORY_VIEW',  icon: Package },
-  { href: '/orders',       label: 'Orders',      permission: 'ORDER_VIEW',      icon: ShoppingCart },
-  { href: '/prescriptions',label: 'Prescriptions',permission: 'PRESCRIPTION_VIEW', icon: ClipboardList },
-  { href: '/reports',      label: 'Reports',     permission: 'REPORTS_VIEW',    icon: BarChart3 },
-];
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -53,18 +55,42 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, permissions, reset, tenantId } = useAuthStore();
+  const { role, reset, tenantId } = useAuthStore();
+  const { data: menu = [], isLoading } = useMyMenu();
 
-  const navItems = role === 'pharmacy_admin' ? PHARMACY_ADMIN_NAV : SYSTEM_ADMIN_NAV;
+  // ─── Expansion state ──────────────────────────────────────────────────────
+  // Parents and children are collapsible. We track expanded ids by key.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  // While auth is loading (permissions still empty), show all nav items so
-  // the sidebar is immediately interactive. Once permissions resolve, filter.
-  const visibleItems =
-    permissions.length === 0
-      ? navItems
-      : navItems.filter(
-          (item) => item.permission === null || permissions.includes(item.permission),
-        );
+  // Determine which parent/child contains the active route so we can auto-open it.
+  const activeBranch = useMemo(() => {
+    for (const parent of menu) {
+      for (const child of parent.children) {
+        for (const screen of child.screens) {
+          if (
+            screen.route &&
+            (pathname === screen.route || pathname.startsWith(screen.route + '/'))
+          ) {
+            return { parentId: parent.id, childId: child.id };
+          }
+        }
+      }
+    }
+    return null;
+  }, [menu, pathname]);
+
+  // Auto-expand the branch holding the active route whenever it changes.
+  useEffect(() => {
+    if (!activeBranch) return;
+    setExpanded((prev) => ({
+      ...prev,
+      [activeBranch.parentId]: true,
+      [activeBranch.childId]: true,
+    }));
+  }, [activeBranch]);
+
+  const toggle = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleLogout = async () => {
     try {
@@ -80,6 +106,114 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     reset();
     router.replace('/login');
     router.refresh();
+  };
+
+  const isScreenActive = (route: string | null) =>
+    !!route && (pathname === route || pathname.startsWith(route + '/'));
+
+  // ─── Render a single child group (sub-menu + its screens) ─────────────────
+  const renderChild = (child: MenuChildNode) => {
+    const ChildIcon = iconFor(child.icon);
+    const childHasActive = child.screens.some((s) => isScreenActive(s.route));
+    // A child is open if explicitly toggled, or if it contains the active route.
+    const open = expanded[child.id] ?? childHasActive;
+
+    return (
+      <div key={child.id} className="space-y-0.5">
+        <button
+          type="button"
+          onClick={() => toggle(child.id)}
+          className={cn(
+            'w-full flex items-center gap-2.5 pl-3 pr-2 py-2 rounded-lg text-[13px] font-medium transition-colors',
+            childHasActive
+              ? 'text-blue-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+          )}
+        >
+          <ChildIcon className="w-4 h-4 shrink-0" />
+          <span className="flex-1 text-left truncate">{child.label}</span>
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
+              open ? 'rotate-0' : '-rotate-90',
+            )}
+          />
+        </button>
+
+        {open && (
+          <div className="ml-4 pl-3 border-l border-white/10 dark:border-white/5 space-y-0.5">
+            {child.screens.map((screen) => {
+              const active = isScreenActive(screen.route);
+              return (
+                <Link
+                  key={screen.id}
+                  href={screen.route ?? '#'}
+                  onClick={onMobileClose}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] transition-all',
+                    active
+                      ? 'nav-active text-blue-400 font-medium'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/5',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full shrink-0 transition-colors',
+                      active ? 'bg-blue-400' : 'bg-slate-500/40',
+                    )}
+                  />
+                  <span className="flex-1 truncate">{screen.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Render a parent group ────────────────────────────────────────────────
+  const renderParent = (parent: MenuParentNode) => {
+    const ParentIcon = iconFor(parent.icon);
+    const parentHasActive = parent.children.some((c) =>
+      c.screens.some((s) => isScreenActive(s.route)),
+    );
+    const open = expanded[parent.id] ?? parentHasActive;
+
+    return (
+      <div key={parent.id} className="space-y-0.5">
+        <button
+          type="button"
+          onClick={() => toggle(parent.id)}
+          className={cn(
+            'nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all',
+            parentHasActive
+              ? 'text-blue-400'
+              : 'text-slate-600 dark:text-slate-300',
+          )}
+        >
+          <ParentIcon
+            className={cn(
+              'w-4.5 h-4.5 shrink-0 transition-colors',
+              parentHasActive ? 'text-blue-400' : 'text-slate-400 dark:text-slate-500',
+            )}
+          />
+          <span className="flex-1 text-left">{parent.label}</span>
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
+              open ? 'rotate-0' : '-rotate-90',
+            )}
+          />
+        </button>
+
+        {open && (
+          <div className="mt-0.5 space-y-0.5">
+            {parent.children.map((child) => renderChild(child))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const SidebarContent = () => (
@@ -111,36 +245,25 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         Navigation
       </p>
 
-      {/* Nav items */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onMobileClose}
-              className={cn(
-                'nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'nav-active text-blue-400'
-                  : 'text-slate-600 dark:text-slate-300',
-              )}
-            >
-              <Icon
-                className={cn(
-                  'w-4.5 h-4.5 shrink-0 transition-colors',
-                  isActive ? 'text-blue-400' : 'text-slate-400 dark:text-slate-500',
-                )}
+      {/* Nav tree */}
+      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        {isLoading ? (
+          // Lightweight skeleton while /me/menu resolves
+          <div className="space-y-2 px-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-9 rounded-xl bg-white/5 dark:bg-white/[0.03] animate-pulse"
               />
-              <span className="flex-1">{item.label}</span>
-              {isActive && (
-                <ChevronRight className="w-3.5 h-3.5 text-blue-400/60 shrink-0" />
-              )}
-            </Link>
-          );
-        })}
+            ))}
+          </div>
+        ) : menu.length === 0 ? (
+          <p className="px-3 py-4 text-xs text-slate-400">
+            No accessible menu items. Contact your administrator.
+          </p>
+        ) : (
+          menu.map((parent) => renderParent(parent))
+        )}
       </nav>
 
       {/* Footer */}
