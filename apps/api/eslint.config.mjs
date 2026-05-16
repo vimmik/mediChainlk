@@ -9,6 +9,26 @@ export default [
   },
   eslint.configs.recommended,
   {
+    // One-off Node scripts (DB migrations, etc.) — run via `node`, not bundled.
+    // Declare the Node runtime globals so `no-undef` doesn't flag process/console.
+    files: ['scripts/**/*.{mjs,js}', 'prisma/**/*.{mjs,js}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'writable',
+        global: 'readonly',
+      },
+    },
+  },
+  {
     files: ['src/**/*.ts'],
     languageOptions: {
       parser: tsParser,

@@ -3,9 +3,10 @@
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DetailSkeleton } from '@/components/shared/TableSkeleton';
 import { EditUserDrawer } from '@/components/users/EditUserDrawer';
+import { UserPermissionsPanel } from '@/components/users/UserPermissionsPanel';
 import { useUser } from '@/hooks/useUsers';
 import { Button } from '@medichainlk/ui';
-import { Building2, MapPin, Pencil, Star } from 'lucide-react';
+import { Building2, MapPin, Pencil, ShieldCheck, Star, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -28,10 +29,13 @@ function Field({ label, value }: { label: string; value?: string | number | null
   );
 }
 
+type Tab = 'profile' | 'permissions';
+
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: user, isLoading } = useUser(id);
   const [editOpen, setEditOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('profile');
 
   if (isLoading) {
     return <DetailSkeleton sections={4} fieldsPerSection={6} />;
@@ -93,7 +97,83 @@ export default function UserDetailPage() {
           </div>
         </div>
 
-        {/* Personal Information */}
+        {/* Tab strip */}
+        <div className="flex items-center gap-1 border-b border-white/10 dark:border-white/5 -mb-1">
+          <TabButton active={tab === 'profile'} onClick={() => setTab('profile')} icon={<UserIcon className="w-3.5 h-3.5" />}>
+            Profile
+          </TabButton>
+          <TabButton active={tab === 'permissions'} onClick={() => setTab('permissions')} icon={<ShieldCheck className="w-3.5 h-3.5" />}>
+            Permissions
+          </TabButton>
+        </div>
+
+        {tab === 'permissions' ? (
+          <UserPermissionsPanel userId={user.id} />
+        ) : (
+          <ProfileTab user={user} roleCfg={roleCfg} />
+        )}
+      </div>
+
+      <EditUserDrawer user={user} open={editOpen} onClose={() => setEditOpen(false)} />
+    </>
+  );
+}
+
+// ─── Tab subcomponents ──────────────────────────────────────────────────────
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+        active
+          ? 'border-violet-500 text-violet-500'
+          : 'border-transparent text-slate-400 hover:text-slate-200'
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+interface UserShape {
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  nic: string | null;
+  gender: string | null;
+  birthday: string | null;
+  height: number | null;
+  weight: number | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  addressLine3: string | null;
+  district: string | null;
+  postalCode: string | null;
+  firebaseUid: string;
+  createdAt: string;
+  updatedAt: string;
+  tenant?: { name?: string } | null;
+  branchAssignments?: { id: string; isPrimary: boolean; branch: { id: string; name: string; city: string } }[];
+}
+
+function ProfileTab({ user, roleCfg }: { user: UserShape; roleCfg: { label: string } }) {
+  return (
+    <>
+      {/* Personal Information */}
         <div className="section-glass space-y-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Personal Information</h3>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
@@ -136,39 +216,36 @@ export default function UserDetailPage() {
           </dl>
         </div>
 
-        {/* Branch Assignments */}
-        {(user as { branchAssignments?: { id: string; isPrimary: boolean; branch: { id: string; name: string; city: string } }[] }).branchAssignments?.length ? (
-          <div className="section-glass space-y-4">
-            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              <Building2 className="w-3.5 h-3.5" />
-              Branch Assignments
-            </h3>
-            <div className="space-y-2">
-              {(user as { branchAssignments: { id: string; isPrimary: boolean; branch: { id: string; name: string; city: string } }[] }).branchAssignments.map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded-xl bg-white/5 dark:bg-white/[0.03] border border-white/10 dark:border-white/5 px-4 py-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-500/10 to-blue-500/10 flex items-center justify-center">
-                      <Building2 className="w-3.5 h-3.5 text-violet-500/70" />
-                    </div>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">{a.branch.name}</span>
+      {/* Branch Assignments */}
+      {user.branchAssignments?.length ? (
+        <div className="section-glass space-y-4">
+          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <Building2 className="w-3.5 h-3.5" />
+            Branch Assignments
+          </h3>
+          <div className="space-y-2">
+            {user.branchAssignments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-xl bg-white/5 dark:bg-white/[0.03] border border-white/10 dark:border-white/5 px-4 py-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-violet-500/10 to-blue-500/10 flex items-center justify-center">
+                    <Building2 className="w-3.5 h-3.5 text-violet-500/70" />
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{a.branch.city}</span>
-                    {a.isPrimary && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
-                        <Star className="w-2.5 h-2.5" />
-                        Primary
-                      </span>
-                    )}
-                  </div>
+                  <span className="font-medium text-slate-700 dark:text-slate-300">{a.branch.name}</span>
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{a.branch.city}</span>
+                  {a.isPrimary && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+                      <Star className="w-2.5 h-2.5" />
+                      Primary
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ) : null}
-      </div>
-
-      <EditUserDrawer user={user} open={editOpen} onClose={() => setEditOpen(false)} />
+        </div>
+      ) : null}
     </>
   );
 }

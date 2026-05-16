@@ -87,7 +87,7 @@ export class SessionController {
     const role = (decoded.role as string) ?? 'customer';
     const tenantId = (decoded['tenantId'] as string | null) ?? null;
     const tokenPermissions = (decoded['permissions'] as string[]) ?? [];
-    const permissions = await this.resolvePermissions(role, tokenPermissions);
+    const permissions = await this.resolvePermissions(role, tokenPermissions, decoded.uid);
 
     if (role !== 'system_admin' && role !== 'pharmacy_admin') {
       throw new ForbiddenException('This endpoint is for admin and pharmacy portals only.');
@@ -100,7 +100,10 @@ export class SessionController {
       throw new ForbiddenException(`Account temporarily locked: ${lockReason}`);
     }
 
-    const permVersion = await this.redis.getRolePermissionVersion(role);
+    const [permVersion, userPermVersion] = await Promise.all([
+      this.redis.getRolePermissionVersion(role),
+      this.redis.getUserPermissionVersion(decoded.uid),
+    ]);
 
     const sessionId = randomBytes(32).toString('base64url');
     await this.redis.setSession(
@@ -112,6 +115,7 @@ export class SessionController {
         permissions,
         email: decoded.email,
         permVersion,
+        userPermVersion,
       },
       SESSION_TTL_SECONDS,
     );
@@ -128,19 +132,61 @@ export class SessionController {
     return { role, tenantId, permissions };
   }
 
-  private async resolvePermissions(role: string, fallback: string[]): Promise<string[]> {
-    const rows = await this.prisma.userTypePermission.findMany({
-      where: {
-        userTypeCode: role,
-        isEnabled: true,
-      },
-      include: {
-        permission: {
-          select: {
-            permissionCode: true,
+  /**
+   * Resolve effective permissions for a session.
+   *
+   * Resolution order (highest priority first):
+   *   1. UserPermissionOverride.isGranted=true   — force-grant
+   *   2. UserPermissionOverride.isGranted=false  — force-revoke (wins over grant)
+   *   3. User.roleRef.permissions                — dynamic Role bundle
+   *   4. UserTypePermission (legacy role string) — backward-compat fallback
+   *   5. tokenPermissions (from Firebase claims) — last-resort fallback
+   */
+  private async resolvePermissions(
+    role: string,
+    fallback: string[],
+    firebaseUid?: string,
+  ): Promise<string[]> {
+    // 1. Try the dynamic Role + Override path (requires the user to exist in DB)
+    if (firebaseUid) {
+      const user = await this.prisma.user.findUnique({
+        where: { firebaseUid },
+        select: {
+          id: true,
+          roleRef: {
+            select: {
+              isActive: true,
+              permissions: {
+                include: { permission: { select: { permissionCode: true } } },
+              },
+            },
           },
         },
-      },
+      });
+
+      if (user?.roleRef?.isActive) {
+        const rolePerms = new Set(
+          user.roleRef.permissions.map((p) => p.permission.permissionCode),
+        );
+
+        // Apply UserPermissionOverride on top
+        const overrides = await this.prisma.userPermissionOverride.findMany({
+          where: { userId: user.id },
+          include: { permission: { select: { permissionCode: true } } },
+        });
+        for (const o of overrides) {
+          if (o.isGranted) rolePerms.add(o.permission.permissionCode);
+          else rolePerms.delete(o.permission.permissionCode);
+        }
+
+        return Array.from(rolePerms);
+      }
+    }
+
+    // 2. Legacy fallback — UserTypePermission keyed by role string
+    const rows = await this.prisma.userTypePermission.findMany({
+      where: { userTypeCode: role, isEnabled: true },
+      include: { permission: { select: { permissionCode: true } } },
     });
 
     const dbPermissions = rows.map((r) => r.permission.permissionCode);
@@ -148,8 +194,7 @@ export class SessionController {
       return dbPermissions;
     }
 
-    // Backward-compatible fallback for environments where role mappings
-    // are not seeded yet.
+    // 3. Last-resort fallback — Firebase token claims
     return fallback;
   }
 
@@ -182,19 +227,32 @@ export class SessionController {
       return { authenticated: false, locked: true };
     }
 
-    // If role permissions were updated since this session was created,
-    // re-resolve and patch the session in-place (no re-login required).
-    const currentPermVersion = await this.redis.getRolePermissionVersion(session.role);
+    // If role-level OR user-level permissions were updated since this session
+    // was created, re-resolve and patch the session in-place (no re-login).
+    const [currentRoleVersion, currentUserVersion] = await Promise.all([
+      this.redis.getRolePermissionVersion(session.role),
+      this.redis.getUserPermissionVersion(session.uid),
+    ]);
     let { permissions } = session;
-    if ((session.permVersion ?? 0) < currentPermVersion) {
-      permissions = await this.resolvePermissions(session.role, session.permissions);
+    const roleStale = (session.permVersion ?? 0) < currentRoleVersion;
+    const userStale = (session.userPermVersion ?? 0) < currentUserVersion;
+
+    if (roleStale || userStale) {
+      permissions = await this.resolvePermissions(session.role, session.permissions, session.uid);
       await this.redis.setSession(
         sessionId,
-        { ...session, permissions, permVersion: currentPermVersion },
+        {
+          ...session,
+          permissions,
+          permVersion: currentRoleVersion,
+          userPermVersion: currentUserVersion,
+        },
         SESSION_TTL_SECONDS,
       );
       this.logger.log(
-        `Permissions re-resolved for uid=${session.uid} role=${session.role} (v${session.permVersion ?? 0}→v${currentPermVersion})`,
+        `Permissions re-resolved for uid=${session.uid} role=${session.role} ` +
+        `[role v${session.permVersion ?? 0}→v${currentRoleVersion}, ` +
+        `user v${session.userPermVersion ?? 0}→v${currentUserVersion}]`,
       );
     } else {
       // Rolling session: refresh TTL on activity
